@@ -55,6 +55,7 @@ const P = {
   ranks: num('ranks', 8192),
   classes: num('classes', 256),
   phrases: num('phrases', 768),
+  words: num('words', 0),
   hostPhrases: num('hostPhrases', 96),
   minCtx2: num('minCtx2', 300),
   minCtx2Host: num('minCtx2Host', 40),
@@ -343,6 +344,29 @@ const SEED_PHRASES = [
 
 const rests = splits.filter((x) => x.s).map((x) => x.s!.rest);
 let phrases = minePhrases(rests.slice(0, 400000), P.phrases);
+
+/**
+ * Ordinary English words as phrase candidates.
+ *
+ * Most of a path is words: measured on the held-out corpus, 58% of the
+ * characters after the host sit inside a run of four or more letters. The
+ * miner only finds words frequent enough in *this* corpus, so a word list adds
+ * the long tail. Candidates are pruned by usage after the first round like any
+ * other phrase, so the corpus still decides which ones earn a symbol.
+ */
+if (P.words > 0) {
+  const file = join(corpusDir, 'words.txt');
+  if (existsSync(file)) {
+    const words = readFileSync(file, 'utf8')
+      .split(String.fromCharCode(10))
+      .map((w) => w.trim().toLowerCase())
+      .filter((w) => w.length >= 3 && /^[a-z]+$/.test(w))
+      .slice(0, P.words)
+      .filter((w) => !phrases.includes(w));
+    phrases = [...phrases, ...words];
+    log(words.length + ' word candidates added, ' + phrases.length + ' phrases in play');
+  }
+}
 {
   // Seeds first, mined phrases after, no duplicates.
   const mined = phrases.filter((x) => !SEED_PHRASES.includes(x));

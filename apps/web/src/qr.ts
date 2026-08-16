@@ -127,7 +127,20 @@ export interface QR {
  * uppercase address in whatever the scanner shows the reader. So try both and
  * keep the split version only when it actually buys a smaller square.
  */
-export function encodeQR(text: string, level: Level = 'M'): QR {
+export function encodeQR(text: string, level: Level | 'auto' = 'M'): QR {
+  // "auto": take the smallest square, then buy as much damage tolerance as
+  // fits inside it for free. A symbol is a fixed grid, so the step from M to Q
+  // to H often costs nothing at all: same size, more of it recoverable.
+  if (level === 'auto') {
+    // M is the floor: never trade damage tolerance away for a smaller square,
+    // only take what the chosen size gives for nothing.
+    let best = encodeQR(text, 'M');
+    for (const candidate of ['Q', 'H'] as Level[]) {
+      const qr = encodeQR(text, candidate);
+      if (qr.version <= best.version) best = qr;
+    }
+    return best;
+  }
   const plain = encodeSegments([{ mode: canAlnum(text) ? 'alnum' : 'byte', text, bits: 0 }], level);
   const split = segmentsFor(text);
   if (split.length > 1) {

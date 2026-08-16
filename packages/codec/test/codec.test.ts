@@ -127,11 +127,11 @@ test('explain accounts for every bit and every character of the URL', () => {
     const covered = ex.parts.map((p) => p.text).join('');
     assert.ok(href.startsWith(covered) || covered === href, `parts do not reconstruct ${href}: ${covered}`);
     // Total agrees with the independent size estimate, and with the real furl.
-    // Tolerance is for float rounding only: explain divides each part by the cost
+    // Tolerance is float rounding only: explain divides each part by the cost
     // scale separately, estimateBits divides the integer total once.
     const sum = ex.parts.reduce((a, p) => a + p.bits, 0);
     assert.ok(Math.abs(sum - ex.bits) < 1e-9);
-    assert.ok(Math.abs(ex.bits - codec.estimateBits(u)) < 0.01, `${ex.bits} vs ${codec.estimateBits(u)}`);
+    assert.ok(Math.abs(ex.bits - codec.estimateBits(u)) < 0.001, `${ex.bits} vs ${codec.estimateBits(u)}`);
     const chars = codec.furl(u).code.length;
     assert.ok(chars <= Math.ceil(ex.bits / 6) + 2, `furl ${chars} chars vs ${ex.bits} bits`);
   }
@@ -165,4 +165,48 @@ test('nested coder makes JWT links substantially smaller', () => {
   assert.ok(parts.some((p) => p.run === 'B64TEXT'), 'the JWT payload should be coded as nested text');
   // Even under the toy (uniform) model, unpacking beats 6 bits per character.
   assert.ok(codec.furl(url).code.length < url.length, 'furl should be shorter than the link');
+});
+
+test('low percent escapes keep both hex digits', () => {
+  const codec = new Codec([toyModel()]);
+  // A byte below 0x10 written as one hex digit would swallow the next character:
+  // "a%0Ab" would come back as "a%ab". Every byte must produce two digits.
+  for (const u of [
+    'https://example.com/a%0Ab',
+    'https://example.com/%00%01%02%0f%10',
+    'https://example.com/%09tab%0Anewline',
+    'https://example.com/?q=%0A%0D&x=%7F',
+    'https://example.com/#%0a%0A%aA',
+  ]) {
+    const href = new URL(u).href;
+    assert.equal(codec.unfurl(codec.furl(u).code), href, u);
+  }
+});
+
+test('every printable character round-trips, wherever it lands', () => {
+  const codec = new Codec([toyModel()]);
+  // The whole printable range, not a curated subset: a character the coder
+  // cannot place must send the URL down the raw path, never corrupt it.
+  let alphabet = '';
+  for (let c = 0x20; c <= 0x7e; c++) alphabet += String.fromCharCode(c);
+  let seed = 20260816;
+  const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  let checked = 0;
+  for (let i = 0; i < 1500; i++) {
+    let s = '';
+    const n = 1 + Math.floor(rand() * 30);
+    for (let k = 0; k < n; k++) {
+      s += rand() < 0.12 ? '%' + '0123456789abcdefABCDEF'[Math.floor(rand() * 22)] + '0123456789abcdefABCDEF'[Math.floor(rand() * 22)] : alphabet[Math.floor(rand() * alphabet.length)];
+    }
+    const where = ['/', '/?', '/#', '/p/'][Math.floor(rand() * 4)];
+    let href: string;
+    try {
+      href = new URL(`https://ex.org${where}${s}`).href;
+    } catch {
+      continue;
+    }
+    checked++;
+    assert.equal(codec.unfurl(codec.furl(href).code), href, `round trip failed for ${JSON.stringify(href)}`);
+  }
+  assert.ok(checked > 1000, `only checked ${checked}`);
 });

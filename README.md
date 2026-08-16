@@ -19,9 +19,9 @@
 </p>
 
 ```
-https://en.wikipedia.org/wiki/Arithmetic_coding   ->  https://furl.li/dbDyrnj6TLJwg
-https://www.youtube.com/watch?v=dQw4w9WgXcQ       ->  https://furl.li/Akfe0FgqzejLWI
-https://twitter.com/jack/status/20                ->  https://furl.li/AWjfOjp
+https://en.wikipedia.org/wiki/Arithmetic_coding   ->  https://furl.li/FUHrBKaqKBtK
+https://www.youtube.com/watch?v=dQw4w9WgXcQ       ->  https://furl.li/AY8bqi9XV_i_zQ
+https://twitter.com/jack/status/20                ->  https://furl.li/DiIeQJCA
 ```
 
 A **furl** is a URL rolled up tight. It looks like a shortened link and behaves like a compressed file: the short string *is* the whole URL, losslessly. There is no database, no ID, no lookup, no click counter. `furl.li` unfurls it and redirects; it keeps nothing. Anyone can unfurl a furl with this codec, offline, without ever contacting us, so a furl outlives the site that made it.
@@ -51,7 +51,7 @@ The catch: a stateless furl must carry the whole URL's information, so it can on
 Measured on held-out data (`node bench/bench.ts`). The model trains on a mix of Reddit outbound links, Hacker News stories and curated link lists; a tenth of each is held back, and the ada-url set is kept out of training entirely as a generalisation check.
 
 <!-- BENCH:START -->
-Model v1 (776 KB JSON, 244 KB gzipped), `node bench/bench.ts --n 20000 --hamr <ha.mr clone>`, 2026-08-16. Every corpus below is the held-out tenth that training never saw, except ada, which training never saw at all.
+Model v1 (1160 KB JSON, 354 KB gzipped), `node bench/bench.ts --n 20000 --hamr <ha.mr clone>`, 2026-08-16. Every corpus below is the held-out tenth that training never saw, except ada, which training never saw at all.
 
 **Links people share** (Reddit outbound links, 20 000 URLs, input mean 55.5 characters, median 47):
 
@@ -61,7 +61,7 @@ Model v1 (776 KB JSON, 244 KB gzipped), `node bench/bench.ts --n 20000 --hamr <h
 | deflate + base64url | 71.4 | 64 | 112 | 1.29x | 0.4% |
 | brotli + base64url | 68.6 | 63 | 103 | 1.24x | 5% |
 | ha.mr (its own 82-char alphabet) | 33.2 | 26 | 65 | 0.60x | 100% |
-| **enfurl v1** | **24.5** | **19** | **47** | **0.44x** | **100%** |
+| **enfurl v1** | **23.1** | **18** | **43** | **0.42x** | **100%** |
 
 **Links people post today** (Hacker News stories, 14 877 URLs, mean 63.4) and **curated lists** (3 406 URLs, mean 41.1):
 
@@ -69,7 +69,7 @@ Model v1 (776 KB JSON, 244 KB gzipped), `node bench/bench.ts --n 20000 --hamr <h
 |---|---|---|---|---|
 | brotli + base64url | 71.2 | 68 | 52.8 | 50 |
 | ha.mr | 39.3 | 35 | 22.3 | 19 |
-| **enfurl v1** | **28.5** | **24** | **17.2** | **16** |
+| **enfurl v1** | **26.1** | **23** | **16.2** | **15** |
 
 **A distribution nobody trained on** (ada-url dataset, crawled from top-100 sites, 20 000 URLs, mean 97.4):
 
@@ -77,28 +77,27 @@ Model v1 (776 KB JSON, 244 KB gzipped), `node bench/bench.ts --n 20000 --hamr <h
 |---|---|---|---|---|
 | brotli + base64url | 93.9 | 76 | 183 | 0.96x |
 | ha.mr | 62.1 | 41 | 156 | 0.64x |
-| **enfurl v1** | **53.4** | **35** | **138** | **0.55x** |
+| **enfurl v1** | **49.5** | **32** | **131** | **0.51x** |
 
 **Magic-link / SSO URLs** (5 000 generated links carrying a JWT; no public corpus of these exists, so the benchmark generates them with a different seed from the trainer's synthetic mix; input mean 257.5):
 
 | coder | mean chars | median | p90 | vs input |
 |---|---|---|---|---|
-| deflate + base64url | 294.8 | 296 | 355 | 1.15x |
 | brotli + base64url | 285.1 | 286 | 351 | 1.11x |
 | ha.mr | 241.2 | 243 | 300 | 0.94x |
-| **enfurl v1** | **138.4** | **138** | **171** | **0.54x** |
+| **enfurl v1** | **136.3** | **136** | **167** | **0.53x** |
 
 Those carry a signature, which is random by construction: 256 bits stay 43 characters here and everywhere else. What enfurl saves is the readable half, by unpacking base64 that turns out to hold text. For links like these the real lever is a smaller token, not a better compressor.
 
-By input length (Reddit held-out, enfurl mean furl length): under 40 chars -> 11.9, 40-59 -> 18.3, 60-89 -> 33.3, 90-139 -> 51.4. Round trip verified on every held-out URL, zero failures, about 13 000 furl+unfurl per second in Node.
+By input length (Reddit held-out, enfurl mean furl length): under 40 chars -> 11.5, 40-59 -> 17.4, 60-89 -> 31.2, 90-139 -> 47.8. Round trip verified on every held-out URL, zero failures, about 13 000 furl+unfurl per second in Node.
 
 | URL | furl |
 |---|---|
-| `https://twitter.com/jack/status/20` | `AWjfOjp` |
-| `https://en.wikipedia.org/wiki/Arithmetic_coding` | `dbDyrnj6TLJwg` |
-| `https://www.youtube.com/watch?v=dQw4w9WgXcQ` | `Akfe0FgqzejLWI` |
-| `https://news.ycombinator.com/item?id=546530` | `8hrcIkFgOCL9A` |
-| `https://www.reddit.com/r/programming/comments/1abc2de/some_title_here/` | `AqBrhmyvzV_HYtSPIevl-Qm6cw` |
+| `https://twitter.com/jack/status/20` | `DiIeQJCA` |
+| `https://en.wikipedia.org/wiki/Arithmetic_coding` | `FUHrBKaqKBtK` |
+| `https://www.youtube.com/watch?v=dQw4w9WgXcQ` | `AY8bqi9XV_i_zQ` |
+| `https://news.ycombinator.com/item?id=546530` | `L4w5kbrNTysA` |
+| `https://www.reddit.com/r/programming/comments/1abc2de/some_title_here/` | `XEeHLXlfJTJPwUx2OxgA` |
 <!-- BENCH:END -->
 
 General-purpose compressors (deflate, brotli) make short URLs *longer*: their framing costs more than the input. [ha.mr](https://github.com/p2r3/ha.mr) is the one existing tool with the same premise and the fair comparison; furls come out shorter because enfurl uses a context model with a range coder rather than order-0 Huffman, plus an optimal parse over characters, phrases and typed runs.
@@ -129,9 +128,9 @@ codec.explain(href).parts;     // where every bit of that furl went
 **Command line:**
 
 ```bash
-npx enfurl https://en.wikipedia.org/wiki/Arithmetic_coding     # -> dbDyrnj6TLJwg
-npx enfurl unfurl dbDyrnj6TLJwg                                 # -> the URL
-npx enfurl unfurl https://furl.li/dbDyrnj6TLJwg                 # full links work too
+npx enfurl https://en.wikipedia.org/wiki/Arithmetic_coding     # -> FUHrBKaqKBtK
+npx enfurl unfurl FUHrBKaqKBtK                                 # -> the URL
+npx enfurl unfurl https://furl.li/FUHrBKaqKBtK                 # full links work too
 npx enfurl --strip "https://shop.example/p?id=1&utm_source=x"   # shake off tracking parameters first
 npx enfurl --bits https://example.com/                          # how small it would furl
 ```
@@ -142,15 +141,15 @@ npx enfurl --bits https://example.com/                          # how small it w
 
 | shape | who sees the furl | when to use |
 |---|---|---|
-| `https://furl.li/dbDyrnj6TLJwg` | furl.li receives it, answers a 302, keeps nothing | default: link previews, curl, no-JavaScript clients |
-| `https://furl.li/#dbDyrnj6TLJwg` | nobody but your browser (fragments are never sent) | when even the redirect host should not see where you go |
-| `https://furl.li/dbDyrnj6TLJwg+` | same as the first | peek at where a furl leads before going there |
+| `https://furl.li/FUHrBKaqKBtK` | furl.li receives it, answers a 302, keeps nothing | default: link previews, curl, no-JavaScript clients |
+| `https://furl.li/#FUHrBKaqKBtK` | nobody but your browser (fragments are never sent) | when even the redirect host should not see where you go |
+| `https://furl.li/FUHrBKaqKBtK+` | same as the first | peek at where a furl leads before going there |
 
 **Self-host:** `apps/web` is a static site with the model bundled; `apps/edge` is a Cloudflare Worker that serves it and answers `GET /<furl>` with a 302 (`Cache-Control: no-store`, `Referrer-Policy: no-referrer`). No KV, no D1, no logs.
 
 ## How it works
 
-In one paragraph: parse the URL (WHATWG). Code the host as a rank in a frozen table of common domains, or as `label + suffix` through a small character model. Code path + query + fragment as one character stream through a static order-2 context model with PPM-style escapes and exclusion, whose unit set is characters, a phrase dictionary (`/wiki/`, `.html`, `watch?v=`, ...), and typed runs (decimal, hex, base64url, UUID, percent-encoded bytes) packed at their inherent entropy; the encoder picks the cheapest unit sequence by dynamic programming. A base64url blob that turns out to hold text (a JWT payload, a JSON state parameter) is unpacked and its contents coded through the same model, then packed back on the way out, which is what makes token-carrying links worth furling. Every symbol goes through a 32-bit range coder; trailing zeros are trimmed; bytes become bijective base64url with no padding or length field. A version symbol comes first, and every released model is immutable forever.
+In one paragraph: parse the URL (WHATWG). Code the host as a rank in a frozen table of common domains, or as `label + suffix` through a small character model. Code path + query + fragment as one character stream through a static order-2 context model with PPM-style escapes and exclusion, whose unit set is characters, a dictionary of about two thousand phrases and ordinary English words (`/wiki/`, `.html`, `watch?v=`, `research`, `history`, ...), and typed runs (decimal, hex, base64url, UUID, percent-encoded bytes) packed at their inherent entropy; the encoder picks the cheapest unit sequence by dynamic programming. A base64url blob that turns out to hold text (a JWT payload, a JSON state parameter) is unpacked and its contents coded through the same model, then packed back on the way out, which is what makes token-carrying links worth furling. Every symbol goes through a 32-bit range coder; trailing zeros are trimmed; bytes become bijective base64url with no padding or length field. A version symbol comes first, and every released model is immutable forever.
 
 The stream layout, symbol by symbol, is documented at the top of [`packages/codec/src/format.ts`](packages/codec/src/format.ts); together with `packages/codec/models/v1/model.json` that is the whole definition of what a furl means.
 

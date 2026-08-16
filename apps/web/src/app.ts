@@ -236,10 +236,10 @@ function renderExplain(parts: ExplainPart[], bits: number, code: string, href: s
 /** What the QR panel is showing, so the option controls can redraw it. */
 let qrState: { link: string; href: string } | null = null;
 
-function qrOptions(): { level: Level; render: RenderOptions } {
+function qrOptions(): { level: Level | 'auto'; render: RenderOptions } {
   const light = $<HTMLSelectElement>('#qr-light').value;
   return {
-    level: $<HTMLSelectElement>('#qr-level').value as Level,
+    level: $<HTMLSelectElement>('#qr-level').value as Level | 'auto',
     render: {
       dark: $<HTMLSelectElement>('#qr-dark').value,
       light: light === '' ? null : light,
@@ -262,8 +262,11 @@ function renderQR(link: string, href: string): void {
     const img = $('#qr-img');
     img.innerHTML = qrToSvg(qr, render);
     img.classList.toggle('checker', render.light === null);
-    $('#qr-size').textContent = `${qr.size} x ${qr.size} squares, version ${qr.version}, level ${level}`;
-    let note = 'Point a camera at it. Nothing is looked up when it is scanned: the furl is the link.';
+    $('#qr-size').textContent = `${qr.size} x ${qr.size} squares, version ${qr.version}, error correction ${qr.level}`;
+    let note =
+      level === 'auto' && qr.level !== 'L'
+        ? `Level ${qr.level} error correction, which fits in this size for free: about ${{ L: 7, M: 15, Q: 25, H: 30 }[qr.level]}% of the square can be damaged and it still scans.`
+        : 'Point a camera at it. Nothing is looked up when it is scanned: the furl is the link.';
     try {
       const plain = encodeQR(href, level);
       if (plain.size > qr.size) {
