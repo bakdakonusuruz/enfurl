@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="enfurl rolls a link up into a furl: a short link that is the whole URL, losslessly. No database, no tracking. Anyone can unfurl it, offline.">
+<meta name="theme-color" content="#191816">
+<meta property="og:title" content="enfurl · furl.li">
+<meta property="og:description" content="A furl is a URL rolled up tight. No database, no tracking, unfurl it anywhere.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>enfurl · furl.li · roll a link up, store nothing</title>
+<style>
+  :root{
+    /* Warm ink on warm paper. Neutral everywhere; the one warm accent is spent
+       only on the part of a link that refuses to compress. */
+    --bg:#f8f7f4; --panel:#fff; --fg:#191816; --muted:#6d6b65; --line:#e3e0d9;
+    --accent:#191816; --accent-fg:#faf9f6; --accent-soft:#efeee9;
+    --hot:#a8502e; --warn:#8f3d1f;
+    --c-site:#2a2825; --c-known:#6d6b65; --c-typed:#a9a49a; --c-random:#a8502e; --c-over:#d6d3cb;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#131211; --panel:#1a1918; --fg:#eceae5; --muted:#96938c; --line:#2b2a27;
+      --accent:#eceae5; --accent-fg:#131211; --accent-soft:#232220;
+      --hot:#d98a63; --warn:#e39a72;
+      --c-site:#e6e3dd; --c-known:#96938c; --c-typed:#5e5b55; --c-random:#d98a63; --c-over:#393733;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:46rem;margin:0 auto;padding:3rem 1.15rem 5rem}
+  a{color:var(--fg);text-decoration-color:var(--muted);text-underline-offset:.18em}
+  a:hover{color:var(--hot);text-decoration-color:var(--hot)}
+  code,kbd,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .wordmark{font-family:ui-serif,Georgia,"Times New Roman",serif;font-size:clamp(2.6rem,9vw,3.8rem);
+    line-height:1;margin:0;letter-spacing:-.02em;display:flex;align-items:baseline;gap:.45rem}
+  .wordmark svg{width:.8em;height:.8em;flex:none;transform:translateY(.06em);color:var(--fg)}
+  .say{margin:.55rem 0 0;color:var(--muted);font-size:1rem}
+  .say .ipa{font-family:ui-serif,Georgia,serif;color:var(--fg)}
+  .say b{font-weight:600;color:var(--fg)}
+  .tagline{margin:1.1rem 0 2rem;font-size:1.18rem;max-width:34rem}
+
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:1.1rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .box label.top{display:block;font-weight:600;font-size:.92rem;margin:0 0 .5rem}
+  textarea#url{width:100%;min-height:4.4rem;resize:vertical;
+    font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    padding:.75rem .85rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+  textarea#url:focus{outline:2px solid var(--muted);outline-offset:1px;background:var(--panel)}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.65rem 0 0}
+  .chip{font:inherit;font-size:.85rem;color:var(--muted);background:transparent;border:1px solid var(--line);
+    border-radius:999px;padding:.25rem .7rem;cursor:pointer}
+  .chip:hover{border-color:var(--fg);color:var(--fg)}
+  .opts{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;margin:.9rem 0 0;
+    padding-top:.85rem;border-top:1px dashed var(--line);font-size:.88rem;color:var(--muted)}
+  .opts label{display:inline-flex;align-items:center;gap:.35rem;cursor:pointer}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .seg label{padding:.25rem .7rem;cursor:pointer}
+  .seg input{position:absolute;opacity:0;pointer-events:none}
+  .seg label:has(input:checked){background:var(--accent);color:var(--accent-fg)}
+
+  #result[hidden],#explain[hidden],#unfurled[hidden]{display:none}
+  #result,#unfurled{margin-top:1.1rem}
+  .out{display:flex;gap:.6rem;align-items:stretch;flex-wrap:wrap}
+  .out .link{flex:1 1 18rem;min-width:0;display:flex;align-items:center;padding:.7rem .85rem;
+    background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:1.02rem;word-break:break-all}
+  button.primary{font:inherit;font-weight:600;border:0;border-radius:10px;padding:.7rem 1.15rem;
+    background:var(--accent);color:var(--accent-fg);cursor:pointer}
+  .after{display:flex;flex-wrap:wrap;gap:.35rem .9rem;margin:.6rem 0 0;font-size:.88rem;color:var(--muted)}
+  .headline{margin:1rem 0 .3rem;font-size:1.05rem}
+  .headline b{font-size:1.35rem;font-weight:600}
+  .bars{margin:.5rem 0 0;max-width:34rem}
+  .bar{display:flex;align-items:center;gap:.6rem;margin:.28rem 0;font-size:.82rem;color:var(--muted)}
+  .bar .cap{width:6.4rem;flex:none}
+  .bar .track{height:.7rem;border-radius:999px;background:var(--line);flex:1;overflow:hidden}
+  .bar .fill{height:100%;border-radius:999px;background:var(--c-over)}
+  .bar.now .fill{background:var(--accent)}
+  .bar .num{width:4.6rem;flex:none;text-align:right;font-variant-numeric:tabular-nums}
+  .qr{display:flex;gap:1rem;align-items:flex-start;margin:1rem 0 0;padding:1rem;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+  .qr[hidden]{display:none}
+  .qr-img{flex:none;width:9.5rem;height:9.5rem;background:#fff;border-radius:6px;padding:.35rem}
+  .qr-img svg{width:100%;height:100%;display:block}
+  .qr-side{flex:1 1 12rem;min-width:0}
+  .qr-side strong{display:block;font-size:1rem}
+  .qr-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.4rem .8rem;margin:.7rem 0 0}
+  .qr-opts label{display:flex;flex-direction:column;gap:.15rem;font-size:.78rem;color:var(--muted)}
+  .qr-opts select{font:inherit;font-size:.85rem;padding:.25rem .35rem;border:1px solid var(--line);
+    border-radius:6px;background:var(--bg);color:var(--fg)}
+  .qr-img.checker{background-image:linear-gradient(45deg,var(--line) 25%,transparent 25%,transparent 75%,var(--line) 75%),linear-gradient(45deg,var(--line) 25%,transparent 25%,transparent 75%,var(--line) 75%);background-size:12px 12px;background-position:0 0,6px 6px}
+  .note{font-size:.88rem;color:var(--muted);margin:.55rem 0 0}
+  .note.warn{color:var(--warn)}
+
+  #explain{margin-top:1.8rem;border-top:1px solid var(--line);padding-top:1.4rem}
+  #explain h2{font-size:1.12rem;margin:0 0 .2rem}
+  #explain .sub{color:var(--muted);font-size:.92rem;margin:0 0 .9rem}
+  .stack{display:flex;height:1.4rem;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .stack span{display:block;min-width:2px}
+  .legend{list-style:none;padding:0;margin:.8rem 0 0}
+  .legend li{display:grid;grid-template-columns:.8rem 1fr auto;gap:.6rem;align-items:baseline;
+    padding:.34rem 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+  .legend .dot{width:.8rem;height:.8rem;border-radius:3px;transform:translateY(.1rem)}
+  .legend .what{min-width:0;overflow-wrap:anywhere}
+  .legend .what em{color:var(--muted);font-style:normal;font-size:.86em;display:block}
+  .legend .bits{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .punch{margin:1rem 0 0;padding:.85rem 1rem;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;font-size:.95rem}
+  details.maths{margin-top:2rem;border-top:1px solid var(--line);padding-top:1.2rem}
+  details.maths summary{cursor:pointer;font-weight:600;font-size:1.05rem;font-family:ui-serif,Georgia,serif}
+  details.maths p{margin:.9rem 0 0;color:var(--muted)}
+  details.curious{margin-top:1rem;font-size:.9rem;color:var(--muted)}
+  details.curious summary{cursor:pointer;color:var(--fg);font-weight:600}
+  details.curious dl{display:grid;grid-template-columns:auto 1fr;gap:.25rem .9rem;margin:.7rem 0 .7rem}
+  details.curious dt{color:var(--muted)}
+  details.curious dd{margin:0;overflow-wrap:anywhere}
+
+  section.prose{margin-top:3rem}
+  section.prose h2{font-size:1.15rem;margin:0 0 .4rem}
+  section.prose p{margin:0 0 .9rem}
+  .cols{display:grid;gap:1.6rem;grid-template-columns:1fr}
+  @media(min-width:44rem){.cols{grid-template-columns:1fr 1fr}}
+  dl.words{margin:0}
+  dl.words dt{font-weight:600;font-family:ui-serif,Georgia,serif;font-size:1.02rem;margin-top:.7rem}
+  dl.words dt span{font-weight:400;color:var(--muted);font-size:.85rem;font-family:inherit}
+  dl.words dd{margin:.15rem 0 0;color:var(--muted)}
+  ul.plain{margin:0;padding-left:1.1rem;color:var(--muted)}
+  ul.plain li{margin:.3rem 0}
+  footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);
+    color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:.5rem 1.2rem}
+
+  #redirect{text-align:center;padding:3.5rem 0 0}
+  #redirect h1{font-family:ui-serif,Georgia,serif;font-weight:400;font-size:1.5rem;margin:0 0 1rem}
+  #redirect-target a{font-size:1.15rem;word-break:break-all}
+  .spinner{width:1rem;height:1rem;border:2px solid var(--line);border-top-color:var(--hot);
+    border-radius:50%;display:inline-block;animation:spin .8s linear infinite;vertical-align:-.1rem;margin-right:.4rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <section id="app">
+    <h1 class="wordmark">
+      <svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round">
+        <path d="M4 32h12"/>
+        <path d="M16 32c0-9 7-15 16-15s15 6 15 15-6 14-15 14-11-4-11-10 4-9 10-9 8 4 8 8-3 6-6 6-4-2-4-4"/>
+      </svg>
+      enfurl
+    </h1>
+    <p class="say"><span class="ipa">/ɪnˈfɜːrl/</span> · say <b>in-FURL</b> · that is <em>f</em> + <em>url</em>, which is also what you say at a 312-character tracking link</p>
+    <p class="tagline"><strong>Roll a link up. Unfurl it anywhere.</strong> The short link <em>is</em> your link, folded small. No database, no accounts, no click counting: nothing is stored, so there is nothing to leak.</p>
+
+    <div class="box">
+      <label class="top" for="url">Paste a link to enfurl it, or a furl to unfurl it</label>
+      <textarea id="url" spellcheck="false" autofocus
+        placeholder="https://en.wikipedia.org/wiki/Arithmetic_coding"></textarea>
+      <div class="chips" id="chips"></div>
+      <div class="opts">
+        <label><input type="checkbox" id="strip" checked> shake off tracking parameters</label>
+        <span class="seg" id="shape">
+          <label><input type="radio" name="form" id="form-path" checked> furl.li/…</label>
+          <label><input type="radio" name="form" id="form-hash"> furl.li/#…</label>
+        </span>
+        <span id="shape-hint"></span>
+      </div>
+    </div>
+
+    <div id="result" hidden>
+      <div class="out">
+        <span class="link" id="out-link"></span>
+        <button class="primary" id="copy">Copy</button>
+      </div>
+      <p class="headline" id="headline"></p>
+      <div class="bars" id="bars"></div>
+      <p class="after" id="after"></p>
+      <p class="note" id="note"></p>
+      <div class="qr" id="qr" hidden>
+        <div class="qr-img" id="qr-img"></div>
+        <div class="qr-side">
+          <strong id="qr-size"></strong>
+          <p class="note" id="qr-note"></p>
+          <div class="qr-opts">
+            <label>ink
+              <select id="qr-dark">
+                <option value="#000000">black</option>
+                <option value="#191816">warm black</option>
+                <option value="#1b4d3e">deep green</option>
+                <option value="#a8502e">rust</option>
+                <option value="#ffffff">white, for dark paper</option>
+              </select>
+            </label>
+            <label>background
+              <select id="qr-light">
+                <option value="#ffffff">white</option>
+                <option value="">transparent</option>
+                <option value="#f8f7f4">paper</option>
+                <option value="#131211">near black</option>
+              </select>
+            </label>
+            <label>margin
+              <select id="qr-quiet">
+                <option value="4">4 modules, standard</option>
+                <option value="2">2 modules, tight</option>
+                <option value="0">none</option>
+              </select>
+            </label>
+            <label>error correction
+              <select id="qr-level">
+                <option value="L">L, smallest square</option>
+                <option value="M" selected>M, balanced</option>
+                <option value="Q">Q, survives smudges</option>
+                <option value="H">H, survives a logo on top</option>
+              </select>
+            </label>
+          </div>
+          <p class="after">
+            <button class="chip" id="qr-svg" type="button">download SVG</button>
+            <button class="chip" id="qr-png" type="button">download PNG</button>
+            <button class="chip" id="qr-copy" type="button">copy image</button>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="unfurled" hidden>
+      <p class="headline" style="margin-top:0">This furl unfurls to</p>
+      <div class="out"><span class="link" id="unfurled-link"></span></div>
+      <p class="note" id="unfurled-note">Unfurled here in your browser. No server was asked, nothing was looked up.</p>
+    </div>
+
+    <p class="note warn" id="error"></p>
+
+    <section id="explain" hidden>
+      <h2>What just happened</h2>
+      <p class="sub" id="explain-sub"></p>
+      <div class="stack" id="stack"></div>
+      <ul class="legend" id="legend"></ul>
+      <p class="punch" id="punch"></p>
+      <details class="curious">
+        <summary>For the curious</summary>
+        <dl id="curious"></dl>
+        <p>The whole method is <a href="https://github.com/bakdakonusuruz/enfurl">open source</a>, so anyone can read exactly what happened to your link. Released models are frozen, so a furl made today still unfurls in twenty years.</p>
+      </details>
+    </section>
+
+    <section class="prose">
+      <div class="cols">
+        <div>
+          <h2>What this is</h2>
+          <p>A link shortener that forgot to build the database. Instead of saving your URL somewhere and handing you a ticket number, enfurl <em>compresses</em> the URL and hands you the result. It all happens on your device.</p>
+          <p>So: no sign-up, no dashboard, no expiry, and no way for anyone (us included) to look up who clicked what. A furl also outlives this site, because the <a href="https://github.com/bakdakonusuruz/enfurl">open source tools</a> unfurl it offline.</p>
+        </div>
+        <div>
+          <h2>Why it comes out short</h2>
+          <p>Real links are predictable. A model trained on a million shared links already expects <code>https://www.</code>, knows the common sites, and has seen <code>/watch?v=</code> a hundred thousand times. Those parts cost almost nothing to write down.</p>
+          <p>What no tool can help with is randomness. A video id or a token is random on purpose, so it costs its full size everywhere. The breakdown above shows which of your characters were free and which were not.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top:2rem">The words</h2>
+      <dl class="words">
+        <dt>furl <span>verb, 16th century</span></dt>
+        <dd>What sailors do to a sail: roll it up tight against the spar. Nothing is cut away, it is only made small, and any sailor can shake it out again. The other reading of <em>f</em> + <em>url</em> came free with the name, and we are keeping it.</dd>
+        <dt>enfurl <span>/ɪnˈfɜːrl/</span></dt>
+        <dd>To furl in; to wrap. Tolkien used it for mountains: <em>"in silence folded, mist-enfurled"</em>. We use it for links, and the word happens to carry <em>url</em> in the middle of it.</dd>
+        <dt>a furl <span>noun, ours</span></dt>
+        <dd>A URL rolled up. The thing you copy and send.</dd>
+        <dt>unfurl</dt>
+        <dd>To open a furl back into the link it was made from. Also what chat apps do when they expand a link into a preview. Everyone may unfurl; nobody needs our permission.</dd>
+        <dt>furl.li</dt>
+        <dd>Where furls live. Read it as <em>furly</em>.</dd>
+      </dl>
+
+      <h2 style="margin-top:2rem">Honest limits</h2>
+      <ul class="plain">
+        <li>A furl cannot be edited, expired, or revoked. Nothing is stored, so there is nothing to change.</li>
+        <li>Very random links barely shrink. No tool can beat that; we just show you where it happens.</li>
+        <li>A furl is rolled, not locked: whoever holds it holds the link. Secrets need a different tool.</li>
+        <li>A link that is mostly a signed token (a magic link, an SSO link, a JWT) is mostly random <em>by design</em>. We open the readable parts and compress those, so expect around a third off, not nine tenths. The fix for those is a smaller token, not a cleverer compressor.</li>
+        <li>With <code>furl.li/…</code> our redirect receives the furl. It logs nothing, and you can check, because it is the same open code running here. With <code>furl.li/#…</code> it never receives it at all.</li>
+      </ul>
+
+      <details class="maths">
+        <summary>The maths, briefly</summary>
+        <p>Compression has a hard floor, and it is not an engineering limit, it is arithmetic. If a model thinks a piece of text has probability <em>p</em>, writing that piece down costs <strong>log<sub>2</sub>(1/<em>p</em>)</strong> bits. Nothing can do better; that quantity is called the information content, and it is why the numbers above are in bits rather than characters.</p>
+        <p>Two consequences run this whole tool. First, <strong>expected things are almost free</strong>: if the model gives <code>/watch?v=</code> a probability of 0.93 after seeing <code>youtube.com</code>, writing it costs 0.10 bits, not 72. Second, <strong>surprises cost full price</strong>: an eleven-character YouTube id has 64 equally likely options per character, so it costs 11 × log<sub>2</sub>(64) = 66 bits, and no amount of cleverness reduces that. A furl is written in the 64 characters <code>A-Z a-z 0-9 - _</code>, so each character carries 6 bits, and the length you see is simply the total divided by six.</p>
+        <p>The model is a <em>static order-2 context model</em>: for every pair of characters it has seen, it keeps the odds of what comes next, learned once from a million real links and then frozen. The encoder picks the cheapest way to describe your link (character by character, or by a phrase it recognises, or as a run of random-looking data) using a shortest-path search, and an <em>arithmetic coder</em> writes the result at fractional bits per symbol, which is what lets a near-certain piece cost a tenth of a bit. The whole method is in the <a href="https://github.com/bakdakonusuruz/enfurl">source</a>, comments and all.</p>
+
+      </details>
+    </section>
+
+    <footer>
+      <span>Open source, MIT.</span>
+      <a href="https://github.com/bakdakonusuruz/enfurl">GitHub</a>
+      <span class="mono">npx enfurl &lt;url&gt;</span>
+    </footer>
+  </section>
+
+  <section id="redirect" hidden>
+    <h1 id="redirect-title"></h1>
+    <p id="redirect-target"></p>
+    <p id="redirect-hint" class="note"></p>
+    <div id="redirect-body"></div>
+    <footer style="justify-content:center"><a href="/">enfurl</a> · a furl is the link, rolled up · nothing stored, nothing tracked</footer>
+  </section>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

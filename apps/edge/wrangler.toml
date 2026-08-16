@@ -1,0 +1,20 @@
+name = "enfurl"
+main = "src/worker.ts"
+compatibility_date = "2026-01-01"
+
+# The site answers on its own domain. A custom domain makes Cloudflare create the
+# DNS record and the certificate for it, and routes every path to this worker,
+# which is what /<furl> needs.
+routes = [{ pattern = "furl.li", custom_domain = true }]
+
+# The static app (apps/web/public after `npm run build -w apps/web`) is served as assets.
+# run_worker_first lets the worker answer /<code> before assets are consulted.
+[assets]
+directory = "../web/public"
+run_worker_first = true
+binding = "ASSETS"
+not_found_handling = "404-page"
+
+# No KV, no D1, no queues, no analytics engine. There is nothing to store.
+[observability]
+enabled = false

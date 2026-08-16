@@ -1,0 +1,14 @@
+{
+  "name": "@enfurl/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "furl.li: the page where you enfurl a link and where a furl unfurls itself in the browser. Static, model bundled, deployable anywhere.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --serve"
+  },
+  "dependencies": {
+    "@enfurl/codec": "0.1.0"
+  }
+}

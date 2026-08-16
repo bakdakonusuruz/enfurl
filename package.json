@@ -1,0 +1,44 @@
+{
+  "name": "enfurl-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "enfurl: roll a link up into a furl that is the link, unfurl it anywhere. Stateless URL compression, nothing stored.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/codec -w packages/cli -w apps/web -w apps/edge --if-present",
+    "test": "node --test \"packages/codec/test/*.test.ts\" \"apps/web/test/*.test.ts\"",
+    "test:golden": "node --test \"packages/codec/test/golden.test.ts\"",
+    "train": "node tools/train/src/train.ts",
+    "bench": "node bench/bench.ts",
+    "typecheck": "tsc -p packages/codec/tsconfig.json --noEmit",
+    "qr:tables": "node tools/qr-tables/extract.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "typescript": "^5.8.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bakdakonusuruz/enfurl.git"
+  },
+  "homepage": "https://furl.li",
+  "bugs": {
+    "url": "https://github.com/bakdakonusuruz/enfurl/issues"
+  },
+  "author": "Burak Bayraktaroglu"
+}

@@ -1,0 +1,40 @@
+{
+  "name": "enfurl",
+  "version": "0.1.0",
+  "description": "enfurl rolls a URL up into a furl, unfurl opens it again. Stateless URL compression on the command line: nothing stored, nothing tracked, no network.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "enfurl": "./dist/cli.js",
+    "unfurl": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@enfurl/codec": "0.1.0"
+  },
+  "keywords": [
+    "url",
+    "shortener",
+    "compression",
+    "stateless",
+    "privacy",
+    "furl",
+    "unfurl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bakdakonusuruz/enfurl.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://furl.li",
+  "bugs": {
+    "url": "https://github.com/bakdakonusuruz/enfurl/issues"
+  },
+  "author": "Burak Bayraktaroglu"
+}

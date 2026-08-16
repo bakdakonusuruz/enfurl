@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.wrangler/
+apps/web/public/*.js
+apps/web/public/*.js.map
+apps/web/public/404.html
+bench/corpus/
+tools/train/corpus/
+tools/train/work/
+.idea/
+.DS_Store
+Thumbs.db

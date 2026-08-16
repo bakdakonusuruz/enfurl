@@ -1,0 +1,50 @@
+{
+  "name": "@enfurl/codec",
+  "version": "0.1.0",
+  "description": "Furl a link, unfurl it anywhere. Stateless URL compression: a URL becomes a short base64url furl that is the URL, and back. No storage, no network, zero dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./models/v1": {
+      "types": "./models/v1/index.d.ts",
+      "import": "./models/v1/index.js"
+    },
+    "./models/v1/model.json": "./models/v1/model.json"
+  },
+  "files": [
+    "dist",
+    "models",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test \"test/*.test.ts\""
+  },
+  "keywords": [
+    "url",
+    "compression",
+    "shortener",
+    "stateless",
+    "privacy",
+    "range-coder",
+    "furl",
+    "unfurl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bakdakonusuruz/enfurl.git",
+    "directory": "packages/codec"
+  },
+  "homepage": "https://furl.li",
+  "bugs": {
+    "url": "https://github.com/bakdakonusuruz/enfurl/issues"
+  },
+  "author": "Burak Bayraktaroglu"
+}

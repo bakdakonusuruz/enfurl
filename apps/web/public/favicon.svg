@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- enfurl: a link rolled up. A spiral (the furl) with a loose end (the URL going in). -->
+  <rect width="64" height="64" rx="14" fill="#191816"/>
+  <g stroke="#faf9f6" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M6 32h12"/>
+    <path d="M18 32c0-9 7-15 16-15s15 6 15 15-6 14-15 14-11-4-11-10 4-9 10-9 8 4 8 8-3 6-6 6-4-2-4-4"/>
+  </g>
+</svg>

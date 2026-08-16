@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build -w packages/codec -w packages/cli -w apps/web -w apps/edge
+      # A released model file must never change. Fail loudly if it does.
+      - name: model files are frozen
+        run: |
+          git fetch origin main --depth=1 || true
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            if git diff --quiet origin/main -- packages/codec/models/v1/model.json packages/codec/test/golden-v1.json; then
+              echo "model v1 unchanged"
+            else
+              echo "::error::packages/codec/models/v1/model.json or its golden vectors changed. Released models are immutable; ship a new version instead."
+              exit 1
+            fi
+          fi

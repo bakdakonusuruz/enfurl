@@ -1,0 +1,11 @@
+{
+  "name": "@enfurl/train",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Corpus fetch and model training for @enfurl/codec. Node only, never shipped.",
+  "scripts": {
+    "fetch": "node src/fetch.ts",
+    "train": "node src/train.ts"
+  }
+}
