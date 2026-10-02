@@ -25,7 +25,7 @@ A code issued today must decode in twenty years. So:
 ## Layout
 
 ```
-packages/codec/src/   rangecoder, radix, tables, context-model, text-coder, url, model, format, base64, index
+packages/codec/src/   rangecoder, radix, tables, context-model, text-coder, url, model, format, index
 packages/codec/test/  unit tests against a toy model, golden vectors against the real one
 packages/cli/         the enfurl and unfurl commands
 apps/web/             the static site: UI, client-side unfurl page, QR encoder

@@ -18,7 +18,6 @@
 import { ContextModel } from './context-model.ts';
 import { RangeDecoder, RangeEncoder, encodeUniform } from './rangecoder.ts';
 import { LOG2, COST_SCALE, TOTAL, indexOf, type FreqTable } from './tables.ts';
-import { b64urlToBytes, bytesToB64url, bytesToPrintable, printableToBytes } from './base64.ts';
 
 export const START = '\0';
 
@@ -51,6 +50,9 @@ const RUN_MIN: Record<string, number> = { DEC: 2, HEXL: 4, HEXU: 4, B64: 4, ALNU
 export const START_NESTED = String.fromCharCode(4);
 /** A blob larger than this is left alone; nothing sane hides megabytes in a URL. */
 const B64TEXT_MAX = 4096;
+
+/** base64url without padding, from a string of byte-sized characters. */
+const toB64url = (s: string): string => btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 /** Length buckets: b = floor(log2(n)), n in [1, 4095]. */
 export const LEN_BUCKETS = 12;
@@ -178,9 +180,15 @@ export class TextCoder {
     if (hit !== undefined) return hit ? { ...hit, len } : null;
     let out: { text: string; cost: number } | null = null;
     const blob = text.slice(i, k);
-    const bytes = b64urlToBytes(blob);
-    const inner = bytes && bytesToPrintable(bytes);
-    if (inner && this.canCode(inner) && bytesToB64url(printableToBytes(inner)) === blob) {
+    // atob is forgiving (it ignores non-zero trailing bits), so the blob counts
+    // only when packing the text back reproduces it character for character.
+    let inner: string | null = null;
+    try {
+      inner = atob(blob.replace(/-/g, '+').replace(/_/g, '/'));
+    } catch {
+      // a length of 1 mod 4 is not base64 at all
+    }
+    if (inner && this.canCode(inner) && toB64url(inner) === blob) {
       this.nested = true;
       try {
         out = { text: inner, cost: this.parse(inner, START_NESTED).cost };
@@ -317,7 +325,7 @@ export class TextCoder {
       } finally {
         this.nested = false;
       }
-      return bytesToB64url(printableToBytes(inner));
+      return toB64url(inner);
     }
     if (name === 'UUID') {
       let hex = '';
