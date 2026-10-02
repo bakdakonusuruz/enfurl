@@ -10,7 +10,11 @@ Not much, by design. There is no database, no account, no session, no logging of
 
 ## Reporting a vulnerability
 
-Open a GitHub issue if it is not sensitive. If it is (for example a way to make the worker fetch or leak something), email the maintainer through the address on the GitHub profile with "enfurl security" in the subject. Expect an answer within a week.
+Open a GitHub issue if it is not sensitive. If it is (for example a way to make the worker fetch or leak something, or a furl that unfurls to something other than an `http:` or `https:` target), report it privately at https://github.com/bakdakonusuruz/enfurl/security/advisories/new. Please do not open a public issue for it.
+
+- First response within 7 days.
+- I aim to ship a fix within 30 days of confirming the report, and will tell you if it takes longer.
+- Please keep it private for 90 days from the report, or until a fix is released, whichever comes first. After that you are free to publish. I credit reporters in the advisory unless you ask me not to.
 
 ## Reporting abuse
 
