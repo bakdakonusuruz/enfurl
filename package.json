@@ -19,13 +19,13 @@
     "test:golden": "node --test \"packages/codec/test/golden.test.ts\"",
     "train": "node tools/train/src/train.ts",
     "bench": "node bench/bench.ts",
-    "typecheck": "tsc -p packages/codec/tsconfig.json --noEmit"
+    "typecheck": "npm run build -w packages/codec && tsc -p packages/cli/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p apps/edge/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.4",
     "esbuild": "^0.25.0",
     "jsqr": "^1.4.0",
-    "typescript": "^5.8.0"
+    "typescript": "^7.0.2"
   },
   "allowScripts": {
     "esbuild@0.25.12": true
