@@ -183,7 +183,7 @@ npm test                       # codec unit tests + golden vectors
 npm run build                  # codec, cli, web (esbuild), edge
 node tools/train/src/fetch.ts       # base corpora (once)
 node tools/train/src/fetch-more.mjs # Hacker News, Wikipedia, curated lists
-node tools/train/src/train.ts  # retrain -> a NEW model version, never overwrite a released one
+node tools/train/src/train.ts  # retrain -> tools/train/work/model.json; refuses to write a released model
 node bench/bench.ts            # numbers for this README
 ```
 

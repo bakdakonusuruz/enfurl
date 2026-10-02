@@ -1,12 +1,13 @@
 /**
  * Train a model version from the corpora in tools/train/corpus/.
  *
- *   node tools/train/src/train.ts [--out packages/codec/models/v1/model.json] [--limit N]
+ *   node tools/train/src/train.ts [--out tools/train/work/model.json] [--limit N]
  *        [--ranks 8192] [--classes 256] [--phrases 768] [--hostPhrases 96]
  *        [--minCtx2 300] [--minCtx2Host 40] [--minSym2 20] [--minSym1 1] [--esc 1.0] [--rounds 3] [--excl 1]
  *
  * Deterministic for a fixed corpus and parameters. Never run this to "refresh"
  * a released model: a released model file is frozen; a retrain is a new version.
+ * It refuses any --out under packages/codec/models/.
  *
  * Steps:
  *   1. load every corpus in tools/train/corpus/, normalise, dedupe across all of
@@ -23,6 +24,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
+import { refuseFrozen } from './frozen.ts';
 import { normalizeUrl, structure } from '../../../packages/codec/src/url.ts';
 import { Model, URL_CHARS, HOST_CHARS, type ModelJSON } from '../../../packages/codec/src/model.ts';
 import { NRUN, LEN_BUCKETS, RUN_TYPES } from '../../../packages/codec/src/text-coder.ts';
@@ -48,7 +50,7 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const num = (k: string, d: number) => (args.has(k) ? Number(args.get(k)) : d);
 const P = {
-  out: args.get('out') ?? 'packages/codec/models/v1/model.json',
+  out: args.get('out') ?? 'tools/train/work/model.json',
   version: num('version', 1),
   limit: num('limit', Infinity),
   ranks: num('ranks', 8192),
@@ -68,6 +70,9 @@ const P = {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..', '..');
+const outPath = resolve(root, P.out);
+refuseFrozen(root, outPath, 'tools/train/work/model.json'); // before any work, so a bare run costs nothing
+
 const corpusDir = join(here, '..', 'corpus');
 const benchDir = join(root, 'bench', 'corpus');
 mkdirSync(benchDir, { recursive: true });
@@ -743,7 +748,6 @@ const r1 = evaluate(final, evalSet, 'FINAL reddit held-out');
 const r2 = adaEval.length ? evaluate(final, adaEval, 'FINAL ada (different distribution)') : null;
 json.meta.heldout = { reddit: r1, ada: r2 };
 
-const outPath = join(root, P.out);
 mkdirSync(dirname(outPath), { recursive: true });
 const text = JSON.stringify(json);
 writeFileSync(outPath, text);
