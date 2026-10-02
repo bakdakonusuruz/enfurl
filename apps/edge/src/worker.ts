@@ -8,7 +8,7 @@
  * The worker keeps no state and needs no bindings beyond ASSETS. Do not add
  * logging of request paths: the path *is* the destination URL.
  */
-import { Codec, isCodeText } from '@enfurl/codec';
+import { Codec } from '@enfurl/codec';
 import modelV1 from '@enfurl/codec/models/v1';
 
 const codec = new Codec([modelV1]);
@@ -52,7 +52,6 @@ export default {
     }
     const code = m[1];
     const preview = m[2] === '+';
-    if (!isCodeText(code)) return env.ASSETS.fetch(request);
     let target: string;
     try {
       target = codec.unfurl(code);

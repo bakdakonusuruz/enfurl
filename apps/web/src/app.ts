@@ -8,7 +8,7 @@
  *
  * Nothing here talks to a server. The model is bundled into this file.
  */
-import { Codec, type ExplainPart } from '@enfurl/codec';
+import { Codec, parseFurlLink, type ExplainPart } from '@enfurl/codec';
 import { encodeQR, qrToSvg, qrToCanvas, type RenderOptions } from './qr.ts';
 import type { Level } from './qr-tables.ts';
 import modelV1 from '@enfurl/codec/models/v1';
@@ -22,7 +22,6 @@ const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel)
  * actually served from, so a copy of it on any host produces links that work.
  */
 const HOST = 'furl.li';
-const FURL_RE = /^[A-Za-z0-9_-]+\+?$/;
 
 // ---------------------------------------------------------------- unfurl view
 
@@ -366,16 +365,6 @@ function setupTool(): void {
     $('#error').textContent = '';
   };
 
-  /** A furl wrapped in one of our own links, or null. */
-  const furlInLink = (s: string): string | null => {
-    const m = /^https?:\/\/([^/?#]+)(?:\/([^?#]*))?(?:#(.*))?$/i.exec(s);
-    if (!m) return null;
-    const host = m[1].toLowerCase();
-    if (host !== HOST && host !== 'www.' + HOST && host !== location.host) return null;
-    const cand = (m[3] || m[2] || '').replace(/\/+$/, '');
-    return cand && FURL_RE.test(cand) ? cand : null;
-  };
-
   const showUnfurled = (href: string, accidental: boolean) => {
     hide();
     const a = document.createElement('a');
@@ -396,9 +385,10 @@ function setupTool(): void {
     hide();
     if (!raw) return;
 
-    // A furl (bare, or inside a furl.li link) unfurls. Anything else enfurls.
-    const wrapped = furlInLink(raw);
-    const candidate = wrapped ?? (FURL_RE.test(raw) ? raw : null);
+    // A furl (bare, or inside one of our own links) unfurls. Anything else enfurls.
+    const link = parseFurlLink(raw);
+    const wrapped = !!link?.host && (link.host === HOST || link.host === 'www.' + HOST || link.host === location.host);
+    const candidate = link && (wrapped || !link.host) ? link.code : null;
     if (candidate) {
       try {
         showUnfurled(codec.unfurl(candidate), !wrapped && /^[a-z]{1,10}$/i.test(raw));
