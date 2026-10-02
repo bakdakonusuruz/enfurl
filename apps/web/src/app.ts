@@ -11,6 +11,7 @@
 import { Codec, parseFurlLink, type ExplainPart } from '@enfurl/codec';
 import { encodeQR, qrToSvg, qrToCanvas, type RenderOptions } from './qr.ts';
 import type { Level } from './qr-tables.ts';
+import { pastedFurl } from './paste.ts';
 import modelV1 from '@enfurl/codec/models/v1';
 
 const codec = new Codec([modelV1]);
@@ -386,9 +387,9 @@ function setupTool(): void {
     if (!raw) return;
 
     // A furl (bare, or inside one of our own links) unfurls. Anything else enfurls.
-    const link = parseFurlLink(raw);
-    const wrapped = !!link?.host && (link.host === HOST || link.host === 'www.' + HOST || link.host === location.host);
-    const candidate = link && (wrapped || !link.host) ? link.code : null;
+    const pasted = pastedFurl(raw, parseFurlLink(raw), [HOST, 'www.' + HOST, location.host]);
+    const wrapped = !!pasted?.wrapped;
+    const candidate = pasted?.code ?? null;
     if (candidate) {
       try {
         showUnfurled(codec.unfurl(candidate), !wrapped && /^[a-z]{1,10}$/i.test(raw));
