@@ -38,7 +38,6 @@ import {
   encodeHref,
   decodeCode,
 } from '../../../packages/codec/src/format.ts';
-import { START } from '../../../packages/codec/src/text-coder.ts';
 
 // ---------------------------------------------------------------- args
 
@@ -60,7 +59,6 @@ const P = {
   minCtx2: num('minCtx2', 300),
   minCtx2Host: num('minCtx2Host', 40),
   minSym2: num('minSym2', 20),
-  minP2: num('minP2', 0),
   minSym1: num('minSym1', 1),
   esc: num('esc', 1.0),
   rounds: num('rounds', 3),
@@ -436,16 +434,14 @@ function buildContextModel(c: CtxCounter, minCtx2: number): ContextModelJSON {
   const o0syms = Array.from({ length: nsym }, (_, i) => i);
   const o0counts = Array.from(c.o0, (v) => v + 1);
   const order0 = { syms: o0syms, freq: quantize(o0counts, TOTAL) };
-  const buildCtx = (arr: Float64Array, minSym: number, minP: number) => {
+  const buildCtx = (arr: Float64Array, minSym: number) => {
     const syms: number[] = [];
     const counts: number[] = [];
     let distinct = 0;
-    let total = 0;
-    for (let s = 0; s < nsym; s++) total += arr[s];
     for (let s = 0; s < nsym; s++) {
       if (arr[s] <= 0) continue;
       distinct++;
-      if (arr[s] >= minSym && arr[s] >= total * minP) {
+      if (arr[s] >= minSym) {
         syms.push(s);
         counts.push(arr[s]);
       }
@@ -457,7 +453,7 @@ function buildContextModel(c: CtxCounter, minCtx2: number): ContextModelJSON {
   };
   const order1: ContextModelJSON['order1'] = {};
   for (const [k, arr] of [...c.o1.entries()].sort()) {
-    const t = buildCtx(arr, P.minSym1, 0);
+    const t = buildCtx(arr, P.minSym1);
     if (t) order1[k] = t;
   }
   const order2: ContextModelJSON['order2'] = {};
@@ -465,7 +461,7 @@ function buildContextModel(c: CtxCounter, minCtx2: number): ContextModelJSON {
     let total = 0;
     for (const v of arr) total += v;
     if (total < minCtx2) continue;
-    const t = buildCtx(arr, P.minSym2, P.minP2);
+    const t = buildCtx(arr, P.minSym2);
     if (t) order2[k] = t;
   }
   return { nsym, excl: P.excl, order0, order1, order2 };

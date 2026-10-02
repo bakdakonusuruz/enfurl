@@ -66,7 +66,6 @@ function ecc(data: Uint8Array, count: number): Uint8Array {
 interface Segment {
   mode: 'alnum' | 'byte';
   text: string;
-  bits: number;
 }
 
 const canAlnum = (s: string): boolean => [...s].every((c) => ALNUM.includes(c));
@@ -86,12 +85,12 @@ export function segmentsFor(url: string): Segment[] {
     const head = m[1].toUpperCase();
     const tail = m[2];
     if (canAlnum(head) && head.length >= 4) {
-      const segs: Segment[] = [{ mode: 'alnum', text: head, bits: 0 }];
-      if (tail.length) segs.push(canAlnum(tail) ? { mode: 'alnum', text: tail, bits: 0 } : { mode: 'byte', text: tail, bits: 0 });
+      const segs: Segment[] = [{ mode: 'alnum', text: head }];
+      if (tail.length) segs.push(canAlnum(tail) ? { mode: 'alnum', text: tail } : { mode: 'byte', text: tail });
       return segs;
     }
   }
-  return [canAlnum(url) ? { mode: 'alnum', text: url, bits: 0 } : { mode: 'byte', text: url, bits: 0 }];
+  return [canAlnum(url) ? { mode: 'alnum', text: url } : { mode: 'byte', text: url }];
 }
 
 function segmentDataBits(seg: Segment): number {
@@ -101,13 +100,6 @@ function segmentDataBits(seg: Segment): number {
   }
   // Byte mode counts UTF-8 bytes; a furl.li link is ASCII, but stay correct.
   return new TextEncoder().encode(seg.text).length * 8;
-}
-
-class BitWriter {
-  readonly bits: number[] = [];
-  put(value: number, length: number): void {
-    for (let i = length - 1; i >= 0; i--) this.bits.push((value >>> i) & 1);
-  }
 }
 
 // ---------------------------------------------------------------- encoding
@@ -141,7 +133,7 @@ export function encodeQR(text: string, level: Level | 'auto' = 'M'): QR {
     }
     return best;
   }
-  const plain = encodeSegments([{ mode: canAlnum(text) ? 'alnum' : 'byte', text, bits: 0 }], level);
+  const plain = encodeSegments([{ mode: canAlnum(text) ? 'alnum' : 'byte', text }], level);
   const split = segmentsFor(text);
   if (split.length > 1) {
     const mixed = encodeSegments(split, level);
@@ -165,31 +157,34 @@ function encodeSegments(segs: Segment[], level: Level): QR {
   }
   if (!version) throw new Error('too long for a QR code');
 
-  const bw = new BitWriter();
+  const bits: number[] = [];
+  const put = (value: number, length: number): void => {
+    for (let i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
+  };
   for (const s of segs) {
-    bw.put(s.mode === 'alnum' ? 0b0010 : 0b0100, 4);
+    put(s.mode === 'alnum' ? 0b0010 : 0b0100, 4);
     const count = s.mode === 'byte' ? new TextEncoder().encode(s.text).length : s.text.length;
-    bw.put(count, charCountBits(s.mode, version));
+    put(count, charCountBits(s.mode, version));
     if (s.mode === 'alnum') {
       for (let i = 0; i + 1 < s.text.length; i += 2) {
-        bw.put(ALNUM.indexOf(s.text[i]) * 45 + ALNUM.indexOf(s.text[i + 1]), 11);
+        put(ALNUM.indexOf(s.text[i]) * 45 + ALNUM.indexOf(s.text[i + 1]), 11);
       }
-      if (s.text.length % 2) bw.put(ALNUM.indexOf(s.text[s.text.length - 1]), 6);
+      if (s.text.length % 2) put(ALNUM.indexOf(s.text[s.text.length - 1]), 6);
     } else {
-      for (const b of new TextEncoder().encode(s.text)) bw.put(b, 8);
+      for (const b of new TextEncoder().encode(s.text)) put(b, 8);
     }
   }
   // terminator, byte alignment, then the standard pad bytes
   const capacityBits = dataCodewords * 8;
-  bw.put(0, Math.min(4, capacityBits - bw.bits.length));
-  while (bw.bits.length % 8) bw.bits.push(0);
+  put(0, Math.min(4, capacityBits - bits.length));
+  while (bits.length % 8) bits.push(0);
   const data = new Uint8Array(dataCodewords);
-  for (let i = 0; i < bw.bits.length; i += 8) {
+  for (let i = 0; i < bits.length; i += 8) {
     let byte = 0;
-    for (let k = 0; k < 8; k++) byte = (byte << 1) | bw.bits[i + k];
+    for (let k = 0; k < 8; k++) byte = (byte << 1) | bits[i + k];
     data[i / 8] = byte;
   }
-  for (let i = bw.bits.length / 8, pad = 0; i < dataCodewords; i++, pad++) data[i] = pad % 2 ? 0x11 : 0xec;
+  for (let i = bits.length / 8, pad = 0; i < dataCodewords; i++, pad++) data[i] = pad % 2 ? 0x11 : 0xec;
 
   // split into blocks, compute ECC, interleave
   const numBlocks = EC_BLOCKS[level][version];
@@ -310,7 +305,6 @@ function draw(version: number, level: Level, codewords: number[]): QR {
   }
 
   // pick the mask with the lowest penalty
-  let bestMask = 0;
   let bestPenalty = Infinity;
   let bestModules = modules;
   for (let mask = 0; mask < 8; mask++) {
@@ -321,11 +315,9 @@ function draw(version: number, level: Level, codewords: number[]): QR {
     const p = penalty(candidate);
     if (p < bestPenalty) {
       bestPenalty = p;
-      bestMask = mask;
       bestModules = candidate;
     }
   }
-  void bestMask;
   return { size, version, level, modules: bestModules };
 }
 

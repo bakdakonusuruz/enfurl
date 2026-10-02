@@ -19,11 +19,11 @@ import modelV1 from '@enfurl/codec/models/v1';
 const invokedAsUnfurl = /unfurl/i.test(basename(process.argv[1] ?? ''));
 const argv = process.argv.slice(2);
 const flags = new Set<string>();
-const opts = new Map<string, string>();
+let host = '';
 const positional: string[] = [];
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
-  if (a === '--host') opts.set('host', argv[++i] ?? '');
+  if (a === '--host') host = argv[++i] ?? '';
   else if (a.startsWith('--') || a === '-d' || a === '-h') flags.add(a);
   else positional.push(a);
 }
@@ -32,7 +32,7 @@ if (positional[0] === 'unfurl') {
   positional.shift();
   flags.add('-d');
 }
-const wantsUnfurl = invokedAsUnfurl || flags.has('-d') || flags.has('--decode') || flags.has('--unfurl');
+const wantsUnfurl = invokedAsUnfurl || flags.has('-d');
 
 if (flags.has('-h') || flags.has('--help') || positional.length === 0) {
   console.log(`enfurl: roll a link up. unfurl: open it again. Nothing stored, nothing tracked.
@@ -62,7 +62,6 @@ try {
     console.log(json ? JSON.stringify({ bits }) : `${bits.toFixed(1)} bits, a furl of about ${Math.ceil(bits / 6)} characters`);
   } else {
     const r = codec.furl(positional[0], { addScheme: true, stripTrackers: flags.has('--strip') });
-    const host = opts.get('host');
     const link = host ? `https://${host.replace(/^https?:\/\//, '').replace(/\/$/, '')}/${r.code}` : r.code;
     if (json) console.log(JSON.stringify({ furl: r.code, link: host ? link : undefined, href: r.href, removedParams: r.removedParams, version: r.version }));
     else {
