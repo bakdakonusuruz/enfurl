@@ -23,8 +23,8 @@ for (const v of [1]) {
     assert.equal(golden.version, v);
     const codec = new Codec([model]);
     for (const { href, code } of golden.vectors) {
-      assert.equal(codec.decode(code), href, `decode ${code}`);
-      assert.equal(codec.encode(href).code, code, `encode ${href}`);
+      assert.equal(codec.unfurl(code), href, `decode ${code}`);
+      assert.equal(codec.furl(href).code, code, `encode ${href}`);
     }
   });
 
@@ -42,7 +42,7 @@ for (const v of [1]) {
       'https://xn--80ak6aa92e.com/',
     ]) {
       const href = new URL(u).href;
-      assert.equal(codec.decode(codec.encode(u).code), href, u);
+      assert.equal(codec.unfurl(codec.furl(u).code), href, u);
     }
   });
 }

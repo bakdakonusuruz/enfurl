@@ -15,7 +15,6 @@ export interface NormalizeOptions {
 
 export interface Normalized {
   href: string;
-  url: URL;
   removedParams: string[];
 }
 
@@ -44,11 +43,7 @@ export function normalizeUrl(input: string, opts: NormalizeOptions = {}): Normal
   if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error(`scheme ${url.protocol} not allowed`);
   const removed: string[] = [];
   if (opts.stripTrackers && url.search) {
-    const keep: [string, string][] = [];
-    for (const [k, v] of url.searchParams) {
-      if (TRACKING_PARAMS.has(k)) removed.push(k);
-      else keep.push([k, v]);
-    }
+    for (const k of url.searchParams.keys()) if (TRACKING_PARAMS.has(k)) removed.push(k);
     if (removed.length) {
       // Rebuild by removing only the matched pairs from the raw query, so
       // untouched parameters keep their original encoding.
@@ -61,7 +56,7 @@ export function normalizeUrl(input: string, opts: NormalizeOptions = {}): Normal
       url.search = kept.length ? '?' + kept.join('&') : '';
     }
   }
-  return { href: url.href, url, removedParams: removed };
+  return { href: url.href, removedParams: removed };
 }
 
 function decodeURIComponentSafe(s: string): string {

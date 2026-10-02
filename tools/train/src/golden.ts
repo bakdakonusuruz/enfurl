@@ -65,8 +65,8 @@ const pick = (arr: string[], count: number) => {
 const inputs = [...edge, ...pick(held, Math.floor(n * 0.7)), ...pick(ada, Math.floor(n * 0.3))];
 const vectors: { href: string; code: string }[] = [];
 for (const u of inputs) {
-  const r = codec.encode(u);
-  const back = codec.decode(r.code);
+  const r = codec.furl(u);
+  const back = codec.unfurl(r.code);
   if (back !== r.href) throw new Error(`round trip failed: ${u}`);
   vectors.push({ href: r.href, code: r.code });
 }

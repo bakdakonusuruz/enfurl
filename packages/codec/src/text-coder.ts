@@ -17,15 +17,9 @@
 
 import { ContextModel } from './context-model.ts';
 import { RangeDecoder, RangeEncoder, encodeUniform } from './rangecoder.ts';
-import { LOG2, COST_SCALE, TOTAL, indexOf, type FreqTable } from './tables.ts';
-import { b64urlToBytes, bytesToB64url, bytesToPrintable, printableToBytes } from './base64.ts';
+import { LOG2, COST_SCALE, TOTAL, type FreqTable } from './tables.ts';
 
 export const START = '\0';
-
-export interface Alphabet {
-  /** the characters this coder can emit, index = symbol id */
-  chars: string;
-}
 
 /**
  * Runs. Order is part of the format.
@@ -57,6 +51,9 @@ export const START_NESTED = String.fromCharCode(4);
 /** A blob larger than this is left alone; nothing sane hides megabytes in a URL. */
 const B64TEXT_MAX = 4096;
 
+/** base64url without padding, from a string of byte-sized characters. */
+const toB64url = (s: string): string => btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
 /** Length buckets: b = floor(log2(n)), n in [1, 4095]. */
 export const LEN_BUCKETS = 12;
 
@@ -72,7 +69,8 @@ const HEX_ANY = runIndex('0123456789abcdefABCDEF');
 
 export interface TextCoderOptions {
   model: ContextModel;
-  alphabet: Alphabet;
+  /** the characters this coder can emit, index = symbol id */
+  chars: string;
   phrases: string[];
   /** length tables per run type (exhaustive over LEN_BUCKETS). Omit to disable runs. */
   runLen?: FreqTable[];
@@ -131,7 +129,7 @@ export class TextCoder {
 
   constructor(opts: TextCoderOptions) {
     this.model = opts.model;
-    this.chars = opts.alphabet.chars;
+    this.chars = opts.chars;
     this.nchars = this.chars.length;
     this.END = this.nchars;
     this.runLen = opts.runLen ?? null;
@@ -192,9 +190,15 @@ export class TextCoder {
     if (hit !== undefined) return hit ? { ...hit, len } : null;
     let out: { text: string; cost: number } | null = null;
     const blob = text.slice(i, k);
-    const bytes = b64urlToBytes(blob);
-    const inner = bytes && bytesToPrintable(bytes);
-    if (inner && this.canCode(inner) && bytesToB64url(printableToBytes(inner)) === blob) {
+    // atob is forgiving (it ignores non-zero trailing bits), so the blob counts
+    // only when packing the text back reproduces it character for character.
+    let inner: string | null = null;
+    try {
+      inner = atob(blob.replace(/-/g, '+').replace(/_/g, '/'));
+    } catch {
+      // a length of 1 mod 4 is not base64 at all
+    }
+    if (inner && this.canCode(inner) && toB64url(inner) === blob) {
       this.nested = true;
       try {
         out = { text: inner, cost: this.parse(inner, START_NESTED).cost };
@@ -320,7 +324,7 @@ export class TextCoder {
       } finally {
         this.nested = false;
       }
-      return bytesToB64url(printableToBytes(inner));
+      return toB64url(inner);
     }
     if (name === 'UUID') {
       let hex = '';
@@ -404,7 +408,6 @@ export class TextCoder {
           if (cc < bc) {
             bc = cc;
             bu = { kind: 'run', len: chars, sym: this.RUN_BASE + t, run: t, lower: r.lower };
-            if (RUN_TYPES[t] === 'PCT') bu.len = chars;
           }
         }
       }
@@ -421,11 +424,6 @@ export class TextCoder {
       i += u.len;
     }
     return { units, cost: best[0] };
-  }
-
-  /** Cost in bits (float) of coding `text` from `start`. */
-  cost(text: string, start: string): number {
-    return this.parse(text, start).cost / COST_SCALE;
   }
 
   /**
@@ -507,4 +505,3 @@ export function runLenTable(freq: number[]): FreqTable {
   return { syms, freq, esc: 0, total };
 }
 
-export { indexOf };

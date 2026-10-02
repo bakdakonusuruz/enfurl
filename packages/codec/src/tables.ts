@@ -34,12 +34,6 @@ export interface FreqTable {
   total: number;
 }
 
-export function makeTable(syms: number[], freq: number[], esc: number): FreqTable {
-  let total = esc;
-  for (const f of freq) total += f;
-  return { syms, freq, esc, total };
-}
-
 /** Binary search: index of sym in table.syms, or -1. */
 export function indexOf(t: FreqTable, sym: number): number {
   let lo = 0;

@@ -19,7 +19,7 @@ const opts = {
 if (process.argv.includes('--serve')) {
   const ctx = await esbuild.context(opts);
   await ctx.watch();
-  const { hosts, port } = await ctx.serve({ servedir: join(here, 'public'), port: 8787, fallback: join(here, 'public/index.html') });
+  const { port } = await ctx.serve({ servedir: join(here, 'public'), port: 8787, fallback: join(here, 'public/index.html') });
   console.log(`serving http://localhost:${port} (fallback to index.html for /code paths)`);
 } else {
   await esbuild.build(opts);

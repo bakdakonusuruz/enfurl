@@ -123,8 +123,6 @@ codec.explain(href).parts;     // where every bit of that furl went
 
 `explain()` is informational: it re-walks the same decisions the encoder makes and is never needed to unfurl anything. It is what draws the bit budget on the site.
 
-`encode` / `decode` exist as aliases for people who expect codec names.
-
 **Command line:**
 
 ```bash
