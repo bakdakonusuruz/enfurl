@@ -523,19 +523,18 @@ function buildModel(c: Counts): ModelJSON {
   };
 }
 
-/** Count the units a TextCoder's optimal parse produces for `text`. */
+/**
+ * Count what the encoder writes for `text`: the same walk, so the symbols
+ * inside a B64TEXT blob are counted too, and a run length only where one is
+ * coded (a UUID has a fixed length, a B64TEXT blob is coded as its text).
+ */
 function countText(m: Model, coder: 'text' | 'host', ctr: CtxCounter, text: string, start: string, runLen?: number[][]): void {
-  const tc = m[coder];
-  const { units } = tc.parse(text, start);
-  let i = 0;
-  for (const u of units) {
-    ctr.add(tc.ctx2(text, i, start), u.sym);
-    if (u.kind === 'run' && runLen) {
-      const len = RUN_TYPES[u.run!] === 'PCT' ? u.len / 3 : u.len;
-      if (RUN_TYPES[u.run!] !== 'UUID') runLen[u.run!][31 - Math.clz32(len)]++;
-    }
-    i += u.len;
-  }
+  m[coder].emit(text, start, {
+    symbol: (ctx2, sym) => ctr.add(ctx2, sym),
+    run: (_text, _i, u) => {
+      if (runLen && RUN_TYPES[u.run!] !== 'UUID') runLen[u.run!][31 - Math.clz32(u.len)]++;
+    },
+  });
 }
 
 function collect(m: Model): Counts {
