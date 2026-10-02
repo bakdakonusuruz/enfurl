@@ -13,7 +13,7 @@
  * Reads nothing but its arguments. Never touches the network. Nothing is stored.
  */
 import { basename } from 'node:path';
-import { Codec } from '@enfurl/codec';
+import { Codec, parseFurlLink } from '@enfurl/codec';
 import modelV1 from '@enfurl/codec/models/v1';
 
 const invokedAsUnfurl = /unfurl/i.test(basename(process.argv[1] ?? ''));
@@ -51,11 +51,10 @@ const json = flags.has('--json');
 
 try {
   if (wantsUnfurl) {
-    let input = positional[0].trim();
-    // accept a full link: take the path segment or the fragment
-    const m = /^[a-z]+:\/\/[^/#]+(?:\/([^#?]*))?(?:#(.*))?$/i.exec(input);
-    if (m) input = m[2] || m[1] || '';
-    const href = codec.unfurl(input);
+    // a bare furl or a full link, from any host
+    const link = parseFurlLink(positional[0]);
+    if (!link) throw new Error('not a furl');
+    const href = codec.unfurl(link.code);
     console.log(json ? JSON.stringify({ href }) : href);
   } else if (flags.has('--bits')) {
     const bits = codec.estimateBits(positional[0], { addScheme: true });

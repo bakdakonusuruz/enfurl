@@ -93,3 +93,25 @@ export class Codec {
     return { href: n.href, ...explainHref(this.latest, n.href) };
   }
 }
+
+/**
+ * The furl in a string as people paste it: bare, '/x', '#x', with a trailing
+ * '+' (peek) or '/', or inside a full link, where the fragment wins over the
+ * path. host is the link's host, '' when there was no link. Null when what is
+ * left is not furl text. One rule, so the page and the CLI cannot drift apart.
+ */
+export function parseFurlLink(s: string): { code: string; peek: boolean; host: string } | null {
+  let t = s.trim();
+  let host = '';
+  const m = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)(?:\/([^?#]*))?(?:\?[^#]*)?(?:#(.*))?$/i.exec(t);
+  if (m) {
+    host = m[1].toLowerCase();
+    t = m[3] || m[2] || '';
+  } else if (t.startsWith('/') || t.startsWith('#')) {
+    t = t.slice(1);
+  }
+  t = t.replace(/\/+$/, '');
+  const peek = t.endsWith('+');
+  if (peek) t = t.slice(0, -1);
+  return t && isCodeText(t) ? { code: t, peek, host } : null;
+}
