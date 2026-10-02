@@ -11,8 +11,6 @@ export interface NormalizeOptions {
   addScheme?: boolean;
   /** Remove well-known tracking parameters. Default false. */
   stripTrackers?: boolean;
-  /** Allowed protocols. Default ['http:', 'https:']. */
-  protocols?: string[];
 }
 
 export interface Normalized {
@@ -45,8 +43,7 @@ export function normalizeUrl(input: string, opts: NormalizeOptions = {}): Normal
   } catch {
     throw new Error('not a valid absolute URL');
   }
-  const protocols = opts.protocols ?? WEB_SCHEMES;
-  if (!protocols.includes(url.protocol)) throw new Error(`scheme ${url.protocol} not allowed`);
+  if (!WEB_SCHEMES.includes(url.protocol)) throw new Error(`scheme ${url.protocol} not allowed`);
   const removed: string[] = [];
   if (opts.stripTrackers && url.search) {
     const keep: [string, string][] = [];
