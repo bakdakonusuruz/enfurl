@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Codec } from '../src/index.ts';
+import { encodeHref } from '../src/format.ts';
+import { Model } from '../src/model.ts';
 import { toyModel } from './helpers.ts';
 
 const URLS = [
@@ -81,6 +83,18 @@ test('rejects non-http schemes and empty input', () => {
   assert.throws(() => codec.encode('   '));
   assert.throws(() => codec.encode('not a url'));
   assert.equal(codec.encode('example.com/x', { addScheme: true }).href, 'https://example.com/x');
+});
+
+test('a hand-made furl for a non-http target is refused on the way out', () => {
+  // Codec.furl refuses these, but raw mode carries any printable href, so a furl
+  // can be written by hand. Unfurling one must not hand back a script URL.
+  const codec = new Codec([toyModel()]);
+  const model = new Model(toyModel());
+  for (const href of ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>', 'data:text/plain,hi']) {
+    const code = encodeHref(model, href);
+    assert.throws(() => codec.unfurl(code), /scheme/, href);
+    assert.throws(() => codec.unfurl('#' + code + '+'), /scheme/, href);
+  }
 });
 
 test('tracker stripping removes only known params and keeps the rest verbatim', () => {

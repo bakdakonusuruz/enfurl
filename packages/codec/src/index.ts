@@ -70,15 +70,21 @@ export class Codec {
 
   /**
    * Unroll a furl back into the URL it was made from. Accepts a bare furl, or one
-   * carrying a leading '/' or '#', or a trailing '+'. Throws on a damaged furl or
-   * an unknown version rather than handing back the wrong URL.
+   * carrying a leading '/' or '#', or a trailing '+'. Throws on a damaged furl,
+   * an unknown version, or a target that is not http or https, rather than
+   * handing back the wrong URL or a script URL.
    */
   unfurl(code: string): string {
     let c = code.trim();
     if (c.startsWith('/') || c.startsWith('#')) c = c.slice(1);
     if (c.endsWith('+')) c = c.slice(0, -1);
     if (!isCodeText(c) || c.length === 0) throw new Error('not a furl');
-    return decodeCode(this.models, c);
+    const href = decodeCode(this.models, c);
+    // furl() only issues http and https, but raw mode carries any printable href,
+    // so a furl written by hand can say javascript: or data:. Callers navigate to
+    // the result, so the way out applies the same rule as the way in, here, once.
+    normalizeUrl(href);
+    return href;
   }
 
   /** Alias of {@link Codec.furl}. */
