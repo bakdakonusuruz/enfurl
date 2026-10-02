@@ -20,10 +20,11 @@
  *   5. evaluate on a held-out sample and write the model.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname, resolve, relative, isAbsolute, sep } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
+import { refuseFrozen } from './frozen.ts';
 import { normalizeUrl, structure } from '../../../packages/codec/src/url.ts';
 import { Model, URL_CHARS, HOST_CHARS, type ModelJSON } from '../../../packages/codec/src/model.ts';
 import { NRUN, LEN_BUCKETS, RUN_TYPES } from '../../../packages/codec/src/text-coder.ts';
@@ -69,20 +70,8 @@ const P = {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..', '..');
-
-// A released model is frozen, so the trainer never writes under
-// packages/codec/models/, not even a new version: releasing one is a deliberate
-// copy from scratch into models/v<n>/ plus a version entry. Checked before any
-// work, so a bare run or a mistyped --out costs nothing.
-// ponytail: plain path compare, a symlink or a differently cased Windows path
-// gets past it; CI's frozen-model diff is the backstop. Use realpath if that bites.
 const outPath = resolve(root, P.out);
-const rel = relative(join(root, 'packages', 'codec', 'models'), outPath);
-if (rel.split(sep)[0] !== '..' && !isAbsolute(rel)) {
-  console.error(`refusing to write ${outPath}: packages/codec/models/ holds released models, which never change.`);
-  console.error('Train to a scratch path (the default is tools/train/work/model.json) and copy a new version in by hand.');
-  process.exit(1);
-}
+refuseFrozen(root, outPath, 'tools/train/work/model.json'); // before any work, so a bare run costs nothing
 
 const corpusDir = join(here, '..', 'corpus');
 const benchDir = join(root, 'bench', 'corpus');

@@ -2,16 +2,19 @@
  * Generate golden test vectors for a released model version.
  *
  *   node tools/train/src/golden.ts [--model packages/codec/models/v1/model.json]
- *                                  [--out packages/codec/test/golden-v1.json] [--n 1000]
+ *                                  [--out tools/train/work/golden.json] [--n 1000]
  *
  * Takes URLs from bench/corpus (held-out) plus a fixed list of edge cases, encodes
  * them, verifies decode, and writes {href, code} pairs. Run once when a model
  * is frozen; the golden test then guards every future change to the codec.
+ * It refuses any --out that is a packages/codec/test/golden-v<n>.json or under
+ * packages/codec/models/.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Codec } from '../../../packages/codec/src/index.ts';
+import { refuseFrozen } from './frozen.ts';
 
 const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i++) {
@@ -21,7 +24,8 @@ for (let i = 2; i < process.argv.length; i++) {
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..', '..');
 const modelPath = resolve(root, args.get('model') ?? 'packages/codec/models/v1/model.json');
-const outPath = resolve(root, args.get('out') ?? 'packages/codec/test/golden-v1.json');
+const outPath = resolve(root, args.get('out') ?? 'tools/train/work/golden.json');
+refuseFrozen(root, outPath, 'tools/train/work/golden.json');
 const n = Number(args.get('n') ?? 1000);
 
 const model = JSON.parse(readFileSync(modelPath, 'utf8'));
@@ -70,5 +74,6 @@ for (const u of inputs) {
   if (back !== r.href) throw new Error(`round trip failed: ${u}`);
   vectors.push({ href: r.href, code: r.code });
 }
+mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify({ version: model.version, generated: new Date().toISOString().slice(0, 10), vectors }, null, 0) + '\n');
 console.log(`wrote ${vectors.length} vectors to ${outPath}`);
