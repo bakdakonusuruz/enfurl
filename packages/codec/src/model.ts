@@ -4,7 +4,7 @@
  */
 
 import { ContextModel, type ContextModelJSON } from './context-model.ts';
-import { TextCoder, runLenTable, type Alphabet } from './text-coder.ts';
+import { TextCoder, runLenTable } from './text-coder.ts';
 import { TOTAL } from './tables.ts';
 
 /** Printable ASCII 0x21..0x7E, which is every character a WHATWG href can contain. */
@@ -73,17 +73,15 @@ export class Model {
     for (const k of Object.keys(json.flags) as (keyof FlagsJSON)[]) checkTotal(json.flags[k], `flags.${k}`);
     checkTotal(json.host.rankBucket, 'rankBucket');
     checkTotal(json.host.suffixFreq, 'suffixFreq');
-    const urlAlpha: Alphabet = { chars: URL_CHARS };
-    const hostAlpha: Alphabet = { chars: HOST_CHARS };
     this.text = new TextCoder({
       model: new ContextModel(json.text.model),
-      alphabet: urlAlpha,
+      chars: URL_CHARS,
       phrases: json.text.phrases,
       runLen: json.text.runLen.map(runLenTable),
     });
     this.host = new TextCoder({
       model: new ContextModel(json.host.model),
-      alphabet: hostAlpha,
+      chars: HOST_CHARS,
       phrases: json.host.phrases,
     });
     this.ranks = json.host.ranks;

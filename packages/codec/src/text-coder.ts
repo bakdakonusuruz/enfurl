@@ -22,11 +22,6 @@ import { b64urlToBytes, bytesToB64url, bytesToPrintable, printableToBytes } from
 
 export const START = '\0';
 
-export interface Alphabet {
-  /** the characters this coder can emit, index = symbol id */
-  chars: string;
-}
-
 /**
  * Runs. Order is part of the format.
  *
@@ -72,7 +67,8 @@ const HEX_ANY = runIndex('0123456789abcdefABCDEF');
 
 export interface TextCoderOptions {
   model: ContextModel;
-  alphabet: Alphabet;
+  /** the characters this coder can emit, index = symbol id */
+  chars: string;
   phrases: string[];
   /** length tables per run type (exhaustive over LEN_BUCKETS). Omit to disable runs. */
   runLen?: FreqTable[];
@@ -121,7 +117,7 @@ export class TextCoder {
 
   constructor(opts: TextCoderOptions) {
     this.model = opts.model;
-    this.chars = opts.alphabet.chars;
+    this.chars = opts.chars;
     this.nchars = this.chars.length;
     this.END = this.nchars;
     this.runLen = opts.runLen ?? null;
@@ -405,7 +401,6 @@ export class TextCoder {
           if (cc < bc) {
             bc = cc;
             bu = { kind: 'run', len: chars, sym: this.RUN_BASE + t, run: t, lower: r.lower };
-            if (RUN_TYPES[t] === 'PCT') bu.len = chars;
           }
         }
       }
@@ -421,11 +416,6 @@ export class TextCoder {
       i += u.len;
     }
     return { units, cost: best[0] };
-  }
-
-  /** Cost in bits (float) of coding `text` from `start`. */
-  cost(text: string, start: string): number {
-    return this.parse(text, start).cost / COST_SCALE;
   }
 
   /**

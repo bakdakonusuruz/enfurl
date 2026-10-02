@@ -50,10 +50,6 @@ export class ContextModel {
     this.exclFlag = new Uint8Array(this.nsym);
   }
 
-  static ctx1Of(ctx2: string): string {
-    return ctx2[1];
-  }
-
   private clearExcl(marked: number[]): void {
     for (const s of marked) this.exclFlag[s] = 0;
     marked.length = 0;
@@ -104,7 +100,7 @@ export class ContextModel {
       enc.encode(TOTAL - t2.esc, t2.esc, TOTAL);
       this.markExcl(t2, marked);
     }
-    const t1 = this.t1.get(ContextModel.ctx1Of(ctx2));
+    const t1 = this.t1.get(ctx2[1]);
     if (t1) {
       const loc = this.locate(t1, sym);
       enc.encode(loc.cum, loc.freq, loc.eff);
@@ -150,7 +146,7 @@ export class ContextModel {
       if (s >= 0) return s;
       this.markExcl(t2, marked);
     }
-    const t1 = this.t1.get(ContextModel.ctx1Of(ctx2));
+    const t1 = this.t1.get(ctx2[1]);
     if (t1) {
       const s = this.decodeFrom(dec, t1);
       if (s >= 0) {
@@ -182,7 +178,7 @@ export class ContextModel {
       base += bitCost(t2.esc, TOTAL);
       this.markExcl(t2, marked);
     }
-    const t1 = this.t1.get(ContextModel.ctx1Of(ctx2));
+    const t1 = this.t1.get(ctx2[1]);
     if (t1) {
       let eff = t1.total;
       for (let i = 0; i < t1.syms.length; i++) if (this.exclFlag[t1.syms[i]]) eff -= t1.freq[i];
