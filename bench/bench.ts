@@ -21,7 +21,7 @@ import { Codec } from '../packages/codec/src/index.ts';
 const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i++) {
   const a = process.argv[i];
-  if (a.startsWith('--')) args.set(a.slice(2), process.argv[i + 1] ?? '1'), i++;
+  if (a.startsWith('--')) args.set(a.slice(2), process.argv[++i] ?? '1');
 }
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');

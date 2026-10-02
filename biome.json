@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": { "includes": ["**", "!**/dist", "!apps/web/public", "!packages/codec/models", "!**/*.json"] },
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "linter": {
+    "rules": {
+      "style": { "noNonNullAssertion": "off", "useImportType": "off", "useTemplate": "off" },
+      "suspicious": { "noAssignInExpressions": "off", "useIterableCallbackReturn": "off" },
+      "complexity": { "useLiteralKeys": "off" }
+    }
+  }
+}

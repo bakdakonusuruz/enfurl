@@ -44,7 +44,7 @@ import {
 const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i++) {
   const a = process.argv[i];
-  if (a.startsWith('--')) args.set(a.slice(2), process.argv[i + 1] ?? '1'), i++;
+  if (a.startsWith('--')) args.set(a.slice(2), process.argv[++i] ?? '1');
 }
 const num = (k: string, d: number) => (args.has(k) ? Number(args.get(k)) : d);
 const P = {
@@ -270,7 +270,7 @@ function minePhrases(texts: string[], max: number, minLen = 2, maxLen = 24, minC
   for (const t of texts) {
     // boundary positions: 0, after each delimiter, and end
     const starts: number[] = [0];
-    for (let i = 0; i < t.length; i++) if (BOUNDARY.has(t[i])) starts.push(i), starts.push(i + 1);
+    for (let i = 0; i < t.length; i++) if (BOUNDARY.has(t[i])) starts.push(i, i + 1);
     const ends = new Set<number>(starts);
     ends.add(t.length);
     const uniq = new Set<string>();

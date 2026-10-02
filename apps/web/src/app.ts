@@ -403,7 +403,7 @@ function setupTool(): void {
       try {
         showUnfurled(codec.unfurl(candidate), !wrapped && /^[a-z]{1,10}$/i.test(raw));
         return;
-      } catch (e) {
+      } catch {
         if (wrapped) {
           $('#error').textContent = 'That is one of our links, but the furl inside it is damaged.';
           return;

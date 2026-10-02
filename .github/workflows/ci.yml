@@ -12,6 +12,7 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run build -w packages/codec -w packages/cli -w apps/web -w apps/edge

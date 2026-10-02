@@ -172,7 +172,6 @@ packages/cli/     enfurl and unfurl commands
 apps/web/         furl.li: static UI, client-side unfurl page, QR encoder
 apps/edge/        Cloudflare Worker: 302 redirect, peek page, static assets
 tools/train/      corpus fetch + model training (Node only, never shipped)
-tools/qr-tables/  regenerates the QR error-correction tables
 bench/            benchmark harness (held-out corpora)
 ```
 
@@ -202,7 +201,7 @@ The codec itself ships with **no runtime dependencies**. Everything below is eit
 | [esbuild](https://esbuild.github.io/) | bundles the site and the worker |
 | [Wrangler](https://developers.cloudflare.com/workers/wrangler/) | deploys the worker |
 | [jsQR](https://github.com/cozmo/jsQR) | decodes our own QR symbols in the tests, so the hand-written encoder is checked against something independent |
-| [node-qrcode](https://github.com/soldair/node-qrcode) | source of the error-correction block tables from ISO/IEC 18004, extracted once by `tools/qr-tables/extract.mjs` |
+| [node-qrcode](https://github.com/soldair/node-qrcode) | source of the error-correction block tables from ISO/IEC 18004, extracted once into `apps/web/src/qr-tables.ts` |
 | [Node's test runner](https://nodejs.org/api/test.html) | the entire test suite, no framework |
 | [Public Suffix List](https://publicsuffix.org/) (MPL 2.0) | tells the host coder where a registrable domain ends |
 | [Tranco](https://tranco-list.eu/) | orders the table of known domains |
