@@ -42,6 +42,7 @@ Node 22.18 or newer runs the TypeScript sources directly through type stripping,
 npm install
 npm test
 npm run typecheck
+npm run lint
 node tools/train/src/fetch.ts        # corpora
 node bench/bench.ts
 ```
