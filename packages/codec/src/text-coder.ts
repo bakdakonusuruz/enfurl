@@ -17,7 +17,7 @@
 
 import { ContextModel } from './context-model.ts';
 import { RangeDecoder, RangeEncoder, encodeUniform } from './rangecoder.ts';
-import { LOG2, COST_SCALE, TOTAL, indexOf, type FreqTable } from './tables.ts';
+import { LOG2, COST_SCALE, TOTAL, type FreqTable } from './tables.ts';
 
 export const START = '\0';
 
@@ -494,4 +494,3 @@ export function runLenTable(freq: number[]): FreqTable {
   return { syms, freq, esc: 0, total };
 }
 
-export { indexOf };

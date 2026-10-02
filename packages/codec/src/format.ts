@@ -173,13 +173,6 @@ export function encodeHref(m: Model, href: string): string {
   return bytesToText(enc.finish());
 }
 
-/** Peek the version of a code without a model. */
-export function codeVersion(code: string): number {
-  const dec = new RangeDecoder(textToBytes(code));
-  const slot = decodeFlag(dec, VERSION_TABLE);
-  return slot === VERSION_ESCAPE ? dec.uniform(256) : slot + 1;
-}
-
 /** Decode a code with the model matching its version. Returns the href. */
 export function decodeCode(models: Map<number, Model>, code: string): string {
   const dec = new RangeDecoder(textToBytes(code));
@@ -286,21 +279,4 @@ export function explainHref(m: Model, href: string): { bits: number; parts: Expl
   let bits = 0;
   for (const p of parts) bits += p.bits;
   return { bits, parts };
-}
-
-/** Cost estimate in bits for a normalised href (no coding performed). */
-export function estimateBits(m: Model, href: string): number {
-  const url = new URL(href);
-  const s = structure(url);
-  // The version symbol is part of every stream, so it is part of every estimate.
-  const version = flagCost(VERSION_TABLE, versionSlot(m.version));
-  if (!s || !m.text.canCode(s.rest) || !m.host.canCode(s.host)) {
-    return (version + flagCost(m.flags.mode, 1) + m.text.parse(href, START_RAW).cost) / COST_SCALE;
-  }
-  const plan = planHost(m, s.host);
-  let c = version + flagCost(m.flags.mode, 0) + flagCost(m.flags.scheme, s.https ? 0 : 1) + flagCost(m.flags.www, s.www ? 1 : 0);
-  c += plan.cost;
-  c += flagCost(m.flags.port, s.port ? 1 : 0) + (s.port ? LOG2[65536] : 0);
-  c += m.text.parse(s.rest, classChar(m, plan.mode === 0 ? plan.rank : undefined)).cost;
-  return c / COST_SCALE;
 }

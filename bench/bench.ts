@@ -52,7 +52,7 @@ const baselines: Record<string, (href: string) => number> = {
         params: { [constants.BROTLI_PARAM_QUALITY]: 11, [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT },
       }).length,
     ),
-  enfurl: (h) => codec.encode(h).code.length,
+  enfurl: (h) => codec.furl(h).code.length,
 };
 if (hamr) baselines['ha.mr'] = (h) => hamr!(h, hamrAlphabet!).length;
 
@@ -158,6 +158,6 @@ for (const u of [
   'https://tr.wikipedia.org/wiki/%C4%B0stanbul',
   'https://example.com/',
 ]) {
-  const c = codec.encode(u).code;
+  const c = codec.furl(u).code;
   console.log(`| \`${u}\` | \`${c}\` | ${c.length} / ${u.length} |`);
 }
