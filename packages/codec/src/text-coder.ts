@@ -86,6 +86,16 @@ export interface Unit {
   run?: number;
   /** PCT/UUID case flag: 1 = lowercase hex letters */
   lower?: number;
+  /** what this unit cost in the parse that chose it, 1/4096 bits */
+  cost?: number;
+}
+
+/** What {@link TextCoder.emit} reports, in exactly the order the encoder writes it. */
+export interface UnitSink {
+  /** one symbol of the context model, in context ctx2 */
+  symbol(ctx2: string, sym: number): void;
+  /** the payload of a run starting at text[i]; u.len is in bytes for PCT, characters otherwise */
+  run(text: string, i: number, u: Unit): void;
 }
 
 interface TrieNode {
@@ -275,17 +285,6 @@ export class TextCoder {
 
   private encodeRunPayload(enc: RangeEncoder, text: string, i: number, u: Unit): void {
     const name = RUN_TYPES[u.run!];
-    if (name === 'B64TEXT') {
-      const b = this.b64TextAt(text, i);
-      if (!b) throw new Error('B64TEXT chosen but the blob does not hold text');
-      this.nested = true;
-      try {
-        this.encode(enc, b.text, START_NESTED);
-      } finally {
-        this.nested = false;
-      }
-      return;
-    }
     if (name === 'UUID') {
       const hex = text.slice(i, i + 36).replace(/-/g, '');
       for (let k = 0; k < 8; k++) encodeUniform(enc, parseInt(hex.slice(k * 4, k * 4 + 4), 16), 65536);
@@ -416,6 +415,7 @@ export class TextCoder {
     let i = 0;
     while (true) {
       const u = choice[i];
+      u.cost = u.kind === 'end' ? best[i] : best[i] - best[i + u.len];
       units.push(u);
       if (u.kind === 'end') break;
       i += u.len;
@@ -438,20 +438,10 @@ export class TextCoder {
     const out: ExplainUnit[] = [];
     let i = 0;
     for (const u of units) {
-      const row = this.model.costs(this.ctx2(text, i, start));
-      let cost = row[u.sym];
-      if (u.kind === 'run') {
-        if (RUN_TYPES[u.run!] === 'B64TEXT') {
-          cost += this.b64TextAt(text, i)!.cost;
-        } else {
-          const byteLen = RUN_TYPES[u.run!] === 'PCT' ? u.len / 3 : u.len;
-          cost += this.runCost(u.run!, byteLen);
-        }
-      }
       out.push({
         kind: u.kind,
         text: text.slice(i, i + u.len),
-        bits: cost / COST_SCALE,
+        bits: u.cost! / COST_SCALE,
         run: u.kind === 'run' ? RUN_TYPES[u.run!] : undefined,
       });
       i += u.len;
@@ -459,18 +449,39 @@ export class TextCoder {
     return out;
   }
 
-  encode(enc: RangeEncoder, text: string, start: string): void {
+  /**
+   * Walk the optimal parse of `text` the way the encoder writes it, including
+   * the text inside every B64TEXT blob, which is coded in place of the blob
+   * under START_NESTED. The encoder and the trainer both walk through here, so
+   * the trainer counts exactly the symbols and runs the encoder writes.
+   */
+  emit(text: string, start: string, sink: UnitSink): void {
     const { units } = this.parse(text, start);
     let i = 0;
     for (const u of units) {
-      this.model.encode(enc, this.ctx2(text, i, start), u.sym);
-      if (u.kind === 'run') {
-        // PCT unit length in text chars is 3 per byte; payload wants byte count
-        const byteLen = RUN_TYPES[u.run!] === 'PCT' ? u.len / 3 : u.len;
-        this.encodeRunPayload(enc, text, i, { ...u, len: byteLen });
+      sink.symbol(this.ctx2(text, i, start), u.sym);
+      if (u.kind === 'run' && RUN_TYPES[u.run!] === 'B64TEXT') {
+        const b = this.b64TextAt(text, i);
+        if (!b) throw new Error('B64TEXT chosen but the blob does not hold text');
+        this.nested = true;
+        try {
+          this.emit(b.text, START_NESTED, sink);
+        } finally {
+          this.nested = false;
+        }
+      } else if (u.kind === 'run') {
+        // a PCT unit spans 3 characters per byte; the payload is coded per byte
+        sink.run(text, i, RUN_TYPES[u.run!] === 'PCT' ? { ...u, len: u.len / 3 } : u);
       }
       i += u.len;
     }
+  }
+
+  encode(enc: RangeEncoder, text: string, start: string): void {
+    this.emit(text, start, {
+      symbol: (ctx2, sym) => this.model.encode(enc, ctx2, sym),
+      run: (t, i, u) => this.encodeRunPayload(enc, t, i, u),
+    });
   }
 
   decode(dec: RangeDecoder, start: string, maxLen = 8192): string {
