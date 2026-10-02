@@ -16,7 +16,7 @@
 
 import { Model, type ModelJSON } from './model.ts';
 import { encodeHref, decodeCode, codeVersion, estimateBits, explainHref, type ExplainPart } from './format.ts';
-import { normalizeUrl, WEB_SCHEMES, type NormalizeOptions } from './url.ts';
+import { normalizeUrl, type NormalizeOptions } from './url.ts';
 import { isCodeText } from './radix.ts';
 
 export { Model, type ModelJSON } from './model.ts';
@@ -82,9 +82,8 @@ export class Codec {
     const href = decodeCode(this.models, c);
     // furl() only issues http and https, but raw mode carries any printable href,
     // so a furl written by hand can say javascript: or data:. Callers navigate to
-    // the result, so the check lives here and not in each of them.
-    const { protocol } = new URL(href);
-    if (!WEB_SCHEMES.includes(protocol)) throw new Error(`scheme ${protocol} not allowed`);
+    // the result, so the way out applies the same rule as the way in, here, once.
+    normalizeUrl(href);
     return href;
   }
 
