@@ -65,12 +65,15 @@ test('every error-correction level works', () => {
   }
 });
 
-test('symbols across the version range decode', () => {
+test('symbols across the version range decode, at every level', () => {
   // Lengths chosen to walk up the versions, including the byte/alnum boundary.
-  for (const n of [1, 5, 10, 25, 40, 60, 90, 130, 180, 250, 400, 700, 1200]) {
-    const url = 'https://furl.li/' + 'aB3-_'.repeat(Math.ceil(n / 5)).slice(0, n);
-    const got = decode(url);
-    assert.ok(got && sameLink(got, url), `length ${n} (version ${encodeQR(url).version}): ${got}`);
+  // Every level, because these decodes are the only check on the block tables.
+  for (const level of ['L', 'M', 'Q', 'H'] as Level[]) {
+    for (const n of [1, 5, 10, 25, 40, 60, 90, 130, 180, 250, 400, 700, 1200]) {
+      const url = 'https://furl.li/' + 'aB3-_'.repeat(Math.ceil(n / 5)).slice(0, n);
+      const got = decode(url, level);
+      assert.ok(got && sameLink(got, url), `level ${level}, length ${n} (version ${encodeQR(url, level).version}): ${got}`);
+    }
   }
 });
 

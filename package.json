@@ -19,14 +19,12 @@
     "test:golden": "node --test \"packages/codec/test/golden.test.ts\"",
     "train": "node tools/train/src/train.ts",
     "bench": "node bench/bench.ts",
-    "typecheck": "tsc -p packages/codec/tsconfig.json --noEmit",
-    "qr:tables": "node tools/qr-tables/extract.mjs"
+    "typecheck": "tsc -p packages/codec/tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "esbuild": "^0.25.0",
     "jsqr": "^1.4.0",
-    "qrcode": "^1.5.4",
     "typescript": "^5.8.0"
   },
   "allowScripts": {

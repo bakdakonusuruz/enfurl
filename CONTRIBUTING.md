@@ -31,7 +31,6 @@ packages/cli/         the enfurl and unfurl commands
 apps/web/             the static site: UI, client-side unfurl page, QR encoder
 apps/edge/            Cloudflare Worker: 302 redirect, peek page, static assets
 tools/train/          corpus fetch and model training (Node only, never shipped)
-tools/qr-tables/      regenerates the QR error-correction tables
 bench/                benchmark harness
 ```
 
