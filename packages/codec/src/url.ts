@@ -32,6 +32,9 @@ export const TRACKING_PARAMS: ReadonlySet<string> = new Set([
 
 const SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 
+/** The only schemes a furl may carry, in either direction. */
+export const WEB_SCHEMES: readonly string[] = ['http:', 'https:'];
+
 export function normalizeUrl(input: string, opts: NormalizeOptions = {}): Normalized {
   let s = input.trim();
   if (s.length === 0) throw new Error('empty URL');
@@ -42,7 +45,7 @@ export function normalizeUrl(input: string, opts: NormalizeOptions = {}): Normal
   } catch {
     throw new Error('not a valid absolute URL');
   }
-  const protocols = opts.protocols ?? ['http:', 'https:'];
+  const protocols = opts.protocols ?? WEB_SCHEMES;
   if (!protocols.includes(url.protocol)) throw new Error(`scheme ${url.protocol} not allowed`);
   const removed: string[] = [];
   if (opts.stripTrackers && url.search) {

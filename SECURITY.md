@@ -4,7 +4,7 @@
 
 Not much, by design. There is no database, no account, no session, no logging of furls or targets. A furl is a compressed URL; unfurling one is a pure function. The interesting surface is:
 
-- **The codec.** A malformed furl must throw, never produce a wrong URL or hang. The decoder validates the result with the WHATWG URL parser and refuses unknown versions. If you find an input that crashes, loops, or misdecodes, that is a bug worth reporting.
+- **The codec.** A malformed furl must throw, never produce a wrong URL or hang. The decoder validates the result with the WHATWG URL parser, refuses unknown versions, and refuses any target that is not `http:` or `https:`, including a furl written by hand rather than issued by `furl()`. If you find an input that crashes, loops, or misdecodes, that is a bug worth reporting.
 - **The redirect.** `furl.li/<furl>` answers a 302 to whatever the furl unfurls to, restricted to `http:` and `https:` targets, with `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. Open redirects are inherent to a shortener; the `+` peek form and a static blocklist hook are the mitigations.
 - **The static page.** No backend, no cookies, no third-party scripts, the model is bundled. Everything after `#` never leaves the browser.
 
