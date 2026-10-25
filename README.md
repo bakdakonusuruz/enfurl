@@ -13,6 +13,7 @@
 <p align="center">
   <img alt="MIT" src="https://img.shields.io/badge/licence-MIT-blue">
   <img alt="Node 22.18+" src="https://img.shields.io/badge/node-%3E%3D22.18-brightgreen">
+  <img alt="Maintainer score 7.4/10 on 2026-10-25" src="https://img.shields.io/badge/maintainer-7.4%2F10-brightgreen">
   <img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-0-lightgrey">
   <img alt="model v1 frozen" src="https://img.shields.io/badge/model-v1%20frozen-8a2be2">
   <a href="https://github.com/bakdakonusuruz/enfurl/actions"><img alt="CI" src="https://github.com/bakdakonusuruz/enfurl/actions/workflows/ci.yml/badge.svg"></a>
