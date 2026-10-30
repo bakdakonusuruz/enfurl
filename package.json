@@ -23,8 +23,8 @@
     "lint": "biome lint --error-on-warnings ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
-    "@types/node": "^26.6.4",
+    "@biomejs/biome": "^2.6.3",
+    "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
     "jsqr": "^1.4.0",
     "typescript": "^7.0.2"
