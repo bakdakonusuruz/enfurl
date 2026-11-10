@@ -237,7 +237,7 @@ export class TextCoder {
           lower = 0;
         }
       }
-      return { len: 36, lower: lower < 0 ? 0 : lower };
+      return { len: 36, lower: Math.max(lower, 0) };
     }
     if (name === 'PCT') {
       let k = i;
@@ -258,7 +258,7 @@ export class TextCoder {
         }
         k += 3;
       }
-      return { len: (k - i) / 3, lower: lower < 0 ? 0 : lower };
+      return { len: (k - i) / 3, lower: Math.max(lower, 0) };
     }
     const idx = RUN_INDEX[name];
     let k = i;
